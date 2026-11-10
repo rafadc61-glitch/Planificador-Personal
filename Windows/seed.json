@@ -1,0 +1,33 @@
+{
+  "name": "Planificador Personal",
+  "currencyCode": "MXN",
+  "appearance": "dark",
+  "weekStartsOn": 2,
+  "mainAccountName": "Cuenta Principal",
+  "availableOpeningBalance": 0,
+  "simulatedIncome": 0,
+  "simulatedIncomeMode": "remaining",
+  "simulatedIncomeScope": "all",
+  "categories": [
+    {"id": "36C2D1D8-8DB2-4669-BA9E-B718C9DA3A9B", "symbol": "house.fill", "emoji": "🏠", "kind": "Gasto", "tint": "#B995FF", "name": "Vivienda"},
+    {"id": "74A5E8F8-37D2-480F-BB5C-229449523E8A", "symbol": "fork.knife", "emoji": "🍽️", "kind": "Gasto", "tint": "#FFB88C", "name": "Comida"},
+    {"id": "38F6DDA0-9188-4860-877D-BEC1C8646294", "symbol": "car.fill", "emoji": "🚗", "kind": "Gasto", "tint": "#7FCBD7", "name": "Transporte"},
+    {"id": "F0AF28EE-BA05-4B93-BD9A-46418BBADD70", "symbol": "heart.fill", "emoji": "💊", "kind": "Gasto", "tint": "#F59EB7", "name": "Salud"},
+    {"id": "A7CF6B21-CDD1-490A-A077-F1DADB31A64E", "symbol": "sparkles", "emoji": "🎮", "kind": "Gasto", "tint": "#E2CE83", "name": "Ocio"},
+    {"id": "50486737-BFF3-4B3C-BF55-8FEED37A2E0D", "symbol": "creditcard.fill", "emoji": "💳", "kind": "Gasto", "tint": "#BDA6FF", "name": "Deudas", "isDebtPayment": true},
+    {"id": "037430B6-6D0F-4DE4-BBF9-201711DFE12B", "symbol": "square.grid.2x2.fill", "emoji": "🛍️", "kind": "Gasto", "tint": "#A9B6C9", "name": "Otros gastos"},
+    {"id": "395339D0-1422-41B4-8FA8-880A6549CFC5", "symbol": "briefcase.fill", "emoji": "💼", "kind": "Ingreso", "tint": "#8ED6B4", "name": "Sueldo"},
+    {"id": "2AE2B490-8638-47F1-BCA8-CE1FD2CA16C0", "symbol": "plus.circle.fill", "emoji": "💰", "kind": "Ingreso", "tint": "#A8C4FF", "name": "Otros ingresos"}
+  ],
+  "accounts": [
+    {"id": "F08538B5-DAB5-435F-B5CA-B8065D601157", "name": "Efectivo", "openingBalance": 0, "symbol": "banknote.fill"}
+  ],
+  "debts": [],
+  "fixedPayments": [],
+  "entries": [],
+  "transfers": [],
+  "budgets": [],
+  "tasks": [],
+  "events": [],
+  "goals": []
+}
