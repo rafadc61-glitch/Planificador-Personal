@@ -1,0 +1,2819 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificador Personal</title>
+<style>
+:root {
+  --bg: #0E1117;
+  --surface: #161B26;
+  --raised: #1E2535;
+  --line: rgba(255,255,255,0.08);
+  --text: #F2F4F8;
+  --muted: #8C97AB;
+  --lavender: #BDA6FF;
+  --mint: #8ED6B4;
+  --peach: #FFB88C;
+  --sky: #7FCBD7;
+  --pink: #F59EB7;
+  --gold: #E2CE83;
+}
+body.light-theme {
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --raised: #EBF0F7;
+  --line: rgba(15,23,42,0.10);
+  --text: #141923;
+  --muted: #616E82;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+input, textarea, select { user-select: text; font-family: inherit; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(140,151,171,0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(140,151,171,0.45); }
+
+/* Layout */
+.sidebar {
+  width: 245px;
+  min-width: 245px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  transition: margin-left 0.22s ease, opacity 0.22s ease;
+  z-index: 20;
+}
+.sidebar.collapsed {
+  margin-left: -245px;
+  opacity: 0;
+  pointer-events: none;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 22px;
+}
+.brand-icon {
+  width: 36px; height: 36px;
+  border-radius: 11px;
+  background: var(--lavender);
+  color: #0E1117;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 18px;
+}
+.brand-text {
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.25;
+}
+.nav-section-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--muted); padding: 0 10px 10px;
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; padding: 11px 13px;
+  border: none; background: transparent; color: var(--muted);
+  font-size: 13.5px; font-weight: 600;
+  border-radius: 12px; cursor: pointer; text-align: left;
+  transition: all 0.15s; margin-bottom: 4px;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.nav-btn.active {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(189,166,255,0.22);
+}
+.nav-btn .ico { width: 20px; text-align: center; font-size: 15px; }
+.sidebar-footer {
+  margin-top: auto;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 14px;
+}
+.sidebar-footer .day { font-size: 13px; font-weight: 700; color: var(--text); text-transform: capitalize; }
+.sidebar-footer .sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+.main-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  gap: 14px;
+}
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; transition: 0.15s;
+}
+.icon-btn:hover { background: var(--raised); border-color: var(--lavender); }
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 30px 60px;
+}
+
+/* Reusable UI */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 21px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.surface-raised {
+  background: linear-gradient(135deg, var(--raised), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 21px;
+  padding: 20px;
+}
+.row { display: flex; align-items: center; gap: 12px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+@media (max-width: 1100px) {
+  .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 780px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+.h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.4px; }
+.h2 { font-size: 18px; font-weight: 750; }
+.sub { font-size: 12px; color: var(--muted); }
+.label-caps {
+  font-size: 9.5px; font-weight: 800; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: 99px;
+  border: 1px solid transparent;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: 0.15s;
+  background: var(--raised); color: var(--text);
+}
+.btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-lavender { background: var(--lavender); color: #0E1117; }
+.btn-mint { background: var(--mint); color: #0E1117; }
+.btn-peach { background: var(--peach); color: #0E1117; }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); border-color: var(--lavender); }
+.btn-sm { padding: 6px 11px; font-size: 11px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 99px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(189,166,255,0.14); color: var(--lavender);
+}
+.pill-mint { background: rgba(142,214,180,0.14); color: var(--mint); }
+.pill-peach { background: rgba(255,184,140,0.14); color: var(--peach); }
+.pill-sky { background: rgba(127,203,215,0.14); color: var(--sky); }
+
+.seg-bar {
+  display: inline-flex; background: var(--surface);
+  padding: 5px; border-radius: 99px; border: 1px solid var(--line);
+  gap: 4px; flex-wrap: wrap;
+}
+.seg-btn {
+  padding: 8px 16px; border-radius: 99px; border: none;
+  background: transparent; color: var(--muted);
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.15s;
+}
+.seg-btn.active { background: var(--lavender); color: #0E1117; }
+
+.filter-pill {
+  padding: 6px 12px; border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--raised); color: var(--muted);
+  font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.14s;
+}
+.filter-pill:hover { color: var(--text); }
+.filter-pill.active {
+  background: var(--lavender); color: #0E1117; border-color: var(--lavender);
+}
+.filter-pill.active-mint {
+  background: var(--mint); color: #0E1117; border-color: var(--mint);
+}
+.filter-pill.active-peach {
+  background: var(--peach); color: #0E1117; border-color: var(--peach);
+}
+
+.badge-ico {
+  width: 36px; height: 36px; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+
+.progress-track {
+  width: 100%; height: 7px; border-radius: 99px;
+  background: rgba(255,255,255,0.07); overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 99px; transition: width 0.25s ease;
+}
+
+/* Tables & Rows */
+.item-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 14px;
+  background: rgba(30,37,53,0.5);
+  border: 1px solid var(--line);
+  margin-bottom: 8px; transition: 0.14s;
+}
+.item-row:hover { border-color: rgba(189,166,255,0.35); background: rgba(30,37,53,0.85); }
+
+/* Modals */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(6,8,12,0.72);
+  backdrop-filter: blur(5px);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.modal-backdrop.open { display: flex; }
+.modal-card {
+  width: 100%; max-width: 560px; max-height: 90vh;
+  background: var(--surface);
+  border: 1px solid rgba(189,166,255,0.3);
+  border-radius: 22px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.modal-header {
+  padding: 18px 22px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-body {
+  padding: 20px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+}
+.modal-footer {
+  padding: 15px 22px; border-top: 1px solid var(--line);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+.field-group label { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.input, select.input, textarea.input {
+  width: 100%; padding: 10px 13px; border-radius: 11px;
+  border: 1px solid var(--line); background: var(--raised);
+  color: var(--text); font-size: 13.5px; outline: none;
+}
+.input:focus { border-color: var(--lavender); }
+
+/* Floating Hover Dialogs for Charts */
+.chart-dialog {
+  background: var(--bg);
+  border: 1px solid rgba(189,166,255,0.45);
+  border-radius: 15px;
+  padding: 13px 15px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+  margin-top: 10px;
+}
+.bar-col {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  height: 210px; cursor: pointer; position: relative; padding: 0 12px;
+}
+.bar-rect {
+  width: 100%; max-width: 110px; border-radius: 12px 12px 5px 5px;
+  transition: all 0.18s ease;
+}
+.bar-col:hover .bar-rect, .bar-col.hovered .bar-rect {
+  filter: brightness(1.18) drop-shadow(0 0 14px var(--glow-color, rgba(142,214,180,0.65)));
+  transform: scaleX(1.04);
+}
+.bar-top-val {
+  font-size: 12px; font-weight: 800; padding: 3px 8px;
+  border-radius: 7px; background: var(--raised);
+  border: 1px solid var(--line); margin-bottom: 6px; white-space: nowrap;
+}
+
+/* Heatmap cells */
+.heat-grid {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;
+}
+.heat-cell {
+  height: 44px; border-radius: 10px; padding: 5px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; border: 1px solid var(--line); transition: 0.14s;
+}
+.heat-cell:hover, .heat-cell.active {
+  transform: scale(1.06);
+  border-color: var(--peach) !important;
+  box-shadow: 0 0 12px rgba(255,184,140,0.45);
+}
+.save-indicator {
+  font-size: 11px; color: var(--mint); font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-icon">☰</div>
+    <div class="brand-text">PLANIFICADOR<br>PERSONAL</div>
+  </div>
+  <div class="nav-section-label">TU ESPACIO</div>
+  <button class="nav-btn" data-page="Inicio" onclick="setPage('Inicio')"><span class="ico">⊞</span> Inicio</button>
+  <button class="nav-btn" data-page="Agenda" onclick="setPage('Agenda')"><span class="ico">📅</span> Agenda</button>
+  <button class="nav-btn" data-page="Semana" onclick="setPage('Semana')"><span class="ico">🗓️</span> Semana</button>
+  <button class="nav-btn" data-page="Metas" onclick="setPage('Metas')"><span class="ico">🎯</span> Metas</button>
+  <button class="nav-btn active" data-page="Finanzas" onclick="setPage('Finanzas')"><span class="ico">◔</span> Finanzas</button>
+  <button class="nav-btn" data-page="Ajustes" onclick="setPage('Ajustes')"><span class="ico">⚙️</span> Ajustes</button>
+
+  <div class="sidebar-footer">
+    <div class="day" id="sidebar-date">Hoy</div>
+    <div class="sub">Un día a la vez, a tu manera.</div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="toggleSidebar()" title="Mostrar / ocultar barra lateral">☰</button>
+      <div>
+        <div style="font-size:15px;font-weight:800;" id="topbar-title">Finanzas</div>
+        <div class="sub" id="topbar-sub">Dinero, crédito y próximos pagos con claridad.</div>
+      </div>
+    </div>
+    <div class="row">
+      <span class="save-indicator" id="save-status">● Guardado automático</span>
+      <button class="btn btn-ghost btn-sm" onclick="openTaskModal()">+ Tarea</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEventModal()">+ Evento</button>
+      <button class="btn btn-lavender btn-sm" onclick="openEntryModal()">+ Movimiento</button>
+    </div>
+  </header>
+
+  <main class="content-scroll" id="app-view"></main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="h2" id="modal-title">Editar</div>
+      <button class="icon-btn" style="width:30px;height:30px;" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script id="initial-seed" type="application/json">__INITIAL_SEED_JSON__</script>
+<script>
+const APPLE_EPOCH_OFFSET = 978307200; // Seconds between 1970-01-01 and 2001-01-01
+
+function toDate(val) {
+  if (val === null || val === undefined) return new Date();
+  if (val instanceof Date) return val;
+  if (typeof val === 'number') {
+    // Heuristic: Apple reference dates around 2020-2035 are ~600M to 1.1B seconds
+    if (val < 1600000000) return new Date((val + APPLE_EPOCH_OFFSET) * 1000);
+    if (val < 10000000000) return new Date(val * 1000);
+    return new Date(val);
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+function toAppleTimestamp(dateInput) {
+  const d = toDate(dateInput);
+  return (d.getTime() / 1000) - APPLE_EPOCH_OFFSET;
+}
+
+function toInputDate(val) {
+  const d = toDate(val);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function fromInputDate(str) {
+  if (!str) return toAppleTimestamp(new Date());
+  const [y, m, d] = str.split('-').map(Number);
+  return toAppleTimestamp(new Date(y, m - 1, d, 12, 0, 0));
+}
+
+function uuid() {
+  if (crypto && crypto.randomUUID) return crypto.randomUUID().toUpperCase();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16).toUpperCase();
+  });
+}
+
+// App State
+let state = {
+  page: 'Finanzas',
+  finTab: 'Dashboard', // Dashboard, Movimientos, Cajas y deudas
+  finCatalog: 'Movimientos', // Movimientos, Pagos fijos, Categorías
+  monthCursor: new Date(),
+  // Dashboard chart filters
+  cashFlowPeriod: 'Mes actual',
+  cashFlowStart: toInputDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+  cashFlowEnd: toInputDate(new Date()),
+  cashFlowHover: null, // 'income' | 'expense' | null
+
+  catPeriod: 'Mes actual',
+  catStart: toInputDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+  catEnd: toInputDate(new Date()),
+  catHoverID: null,
+
+  heatPeriod: 'Mes actual',
+  heatMode: 'calendar', // 'calendar' | 'weekday'
+  heatStart: toInputDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+  heatEnd: toInputDate(new Date()),
+  heatHoverDay: null,
+  heatHoverWeekday: null,
+
+  // Movimientos filters
+  movPeriod: 'Todo',
+  movStart: toInputDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+  movEnd: toInputDate(new Date()),
+  movKind: 'Todos', // Todos, Gasto, Ingreso
+  movCategoryID: 'ALL',
+  movSearch: '',
+
+  // Pagos fijos filters & selection
+  fpScopeFilter: 'ALL', // ALL, Personal, En pareja
+  fpTagFilter: 'ALL',
+  selectedFixedIDs: {},
+
+  // Inicio filters
+  taskScope: 'Todas',
+  taskTag: 'ALL',
+  agendaDate: toInputDate(new Date())
+};
+
+let data = null;
+
+function defaultData() {
+  try {
+    const seedEl = document.getElementById('initial-seed');
+    if (seedEl && seedEl.textContent && !seedEl.textContent.includes('__INITIAL_SEED')) {
+      return JSON.parse(seedEl.textContent);
+    }
+  } catch (e) { console.error(e); }
+  return {
+    name: "Planificador Personal",
+    currencyCode: "MXN",
+    appearance: "dark",
+    weekStartsOn: 2,
+    mainAccountName: "T. Débito Santander",
+    availableOpeningBalance: 0,
+    simulatedIncome: 6200,
+    simulatedIncomeMode: "remaining",
+    simulatedIncomeScope: "all",
+    categories: [],
+    accounts: [{ id: uuid(), name: "Efectivo", openingBalance: 0, symbol: "banknote.fill" }],
+    debts: [],
+    fixedPayments: [],
+    entries: [],
+    transfers: [],
+    budgets: [],
+    tasks: [],
+    events: [],
+    goals: []
+  };
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/data');
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData && Array.isArray(serverData.categories)) {
+        data = serverData;
+        normalizeData();
+        render();
+        return;
+      }
+    }
+  } catch (e) {}
+  const local = localStorage.getItem('planificador_personal_data_v1');
+  if (local) {
+    try { data = JSON.parse(local); } catch (e) { data = defaultData(); }
+  } else {
+    data = defaultData();
+  }
+  normalizeData();
+  render();
+}
+
+function normalizeData() {
+  if (!data.categories) data.categories = [];
+  if (!data.accounts) data.accounts = [];
+  if (!data.accounts.some(a => (a.name || '').trim().toLowerCase() === 'efectivo')) {
+    data.accounts.push({ id: uuid(), name: 'Efectivo', openingBalance: 0, symbol: 'banknote.fill' });
+  }
+  if (!data.debts) data.debts = [];
+  if (!data.fixedPayments) data.fixedPayments = [];
+  if (!data.entries) data.entries = [];
+  if (!data.transfers) data.transfers = [];
+  if (!data.budgets) data.budgets = [];
+  if (!data.tasks) data.tasks = [];
+  if (!data.events) data.events = [];
+  if (!data.goals) data.goals = [];
+  if (!data.mainAccountName) data.mainAccountName = 'T. Débito Santander';
+  if (!data.currencyCode) data.currencyCode = 'MXN';
+  if (!data.simulatedIncomeMode) data.simulatedIncomeMode = 'remaining';
+  if (!data.simulatedIncomeScope) data.simulatedIncomeScope = 'all';
+  document.body.classList.toggle('light-theme', data.appearance === 'light');
+}
+
+let saveTimer = null;
+function saveData() {
+  localStorage.setItem('planificador_personal_data_v1', JSON.stringify(data));
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) statusEl.textContent = '● Guardando...';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } catch (e) {}
+    if (statusEl) statusEl.textContent = '● Guardado automático';
+  }, 180);
+}
+
+// Formatting & Math Helpers
+function fmtMoney(val) {
+  const num = Number(val) || 0;
+  try {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: data?.currencyCode || 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  } catch (e) {
+    return '$' + num.toFixed(2);
+  }
+}
+
+function fmtDateShort(val) {
+  return toDate(val).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fmtDayMonth(val) {
+  return toDate(val).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+function monthKey(dateVal = new Date()) {
+  const d = toDate(dateVal);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function countsAsExpense(entry) {
+  return entry.kind === 'Gasto';
+}
+
+function affectsLiquidity(entry) {
+  return entry.debtAction !== 'charge';
+}
+
+function getMainAccountName() {
+  const n = (data.mainAccountName || '').trim();
+  return n || 'T. Débito Santander';
+}
+
+function isEfectivoAccount(acc) {
+  return (acc.name || '').trim().toLowerCase() === 'efectivo';
+}
+
+function getEfectivoAccount() {
+  return data.accounts.find(isEfectivoAccount);
+}
+
+function getBalance(accountID) {
+  const base = accountID === null
+    ? (Number(data.availableOpeningBalance) || 0)
+    : (Number((data.accounts.find(a => a.id === accountID) || {}).openingBalance) || 0);
+  const entriesDelta = data.entries
+    .filter(e => (e.accountID || null) === accountID && affectsLiquidity(e))
+    .reduce((sum, e) => sum + (e.kind === 'Ingreso' ? Number(e.amount) : -Number(e.amount)), 0);
+  const outgoing = (data.transfers || [])
+    .filter(t => (t.fromAccountID || null) === accountID)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const incoming = (data.transfers || [])
+    .filter(t => (t.toAccountID || null) === accountID)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  return base + entriesDelta - outgoing + incoming;
+}
+
+function getMainAccountBalance() { return getBalance(null); }
+function getEfectivoBalance() {
+  const ef = getEfectivoAccount();
+  return ef ? getBalance(ef.id) : 0;
+}
+function getAvailableBalance() {
+  return getMainAccountBalance() + getEfectivoBalance();
+}
+function getBoxesTotal() {
+  return data.accounts.filter(a => !isEfectivoAccount(a)).reduce((s, a) => s + getBalance(a.id), 0);
+}
+function getTotalMoney() {
+  return getAvailableBalance() + getBoxesTotal();
+}
+
+function getDebtBalance(debt) {
+  const charges = data.entries
+    .filter(e => e.debtID === debt.id && e.debtAction === 'charge')
+    .reduce((s, e) => s + Number(e.amount), 0);
+  const payments = data.entries
+    .filter(e => e.debtID === debt.id && e.debtAction === 'payment')
+    .reduce((s, e) => s + Number(e.amount), 0);
+  return (Number(debt.openingBalance) || 0) + charges - payments;
+}
+
+function getRunningMainBalances() {
+  let running = Number(data.availableOpeningBalance) || 0;
+  const events = [];
+  for (const e of data.entries) {
+    if ((e.accountID || null) === null && affectsLiquidity(e)) {
+      events.push({ date: toDate(e.date).getTime(), id: e.id, delta: e.kind === 'Ingreso' ? Number(e.amount) : -Number(e.amount), isEntry: true });
+    }
+  }
+  for (const t of (data.transfers || [])) {
+    if ((t.fromAccountID || null) === null) {
+      events.push({ date: toDate(t.date).getTime(), id: t.id, delta: -Number(t.amount), isEntry: false });
+    } else if ((t.toAccountID || null) === null) {
+      events.push({ date: toDate(t.date).getTime(), id: t.id, delta: Number(t.amount), isEntry: false });
+    }
+  }
+  events.sort((a, b) => a.date === b.date ? String(a.id).localeCompare(String(b.id)) : a.date - b.date);
+  const result = {};
+  for (const ev of events) {
+    running += ev.delta;
+    if (ev.isEntry) result[ev.id] = running;
+  }
+  return result;
+}
+
+// Fixed Payments Math
+const FREQ_META = {
+  'Semanal':    { mult: 4,      checks: 4, label: '4 cobros/mes' },
+  'Quincenal':  { mult: 2,      checks: 2, label: '2 cobros/mes' },
+  'Mensual':    { mult: 1,      checks: 1, label: 'Mensual' },
+  'Bimestral':  { mult: 1/2,    checks: 1, label: '÷ 2 meses' },
+  'Trimestral': { mult: 1/3,    checks: 1, label: '÷ 3 meses' },
+  'Semestral':  { mult: 1/6,    checks: 1, label: '÷ 6 meses' },
+  'Anual':      { mult: 1/12,   checks: 1, label: '÷ 12 meses' },
+  'Único':      { mult: 1,      checks: 1, label: 'Pago único' }
+};
+
+function stepDueDate(ts, freq, dir = 1) {
+  const d = toDate(ts);
+  if (freq === 'Semanal') d.setDate(d.getDate() + 7 * dir);
+  else if (freq === 'Quincenal') d.setDate(d.getDate() + 15 * dir);
+  else if (freq === 'Mensual') d.setMonth(d.getMonth() + 1 * dir);
+  else if (freq === 'Bimestral') d.setMonth(d.getMonth() + 2 * dir);
+  else if (freq === 'Trimestral') d.setMonth(d.getMonth() + 3 * dir);
+  else if (freq === 'Semestral') d.setMonth(d.getMonth() + 6 * dir);
+  else if (freq === 'Anual') d.setFullYear(d.getFullYear() + 1 * dir);
+  return toAppleTimestamp(d);
+}
+
+function getEffectiveScope(fp) {
+  if (fp.scope === 'En pareja' || fp.scope === 'Personal') return fp.scope;
+  const tags = fp.tags || [];
+  if (tags.some(t => t.toLowerCase().includes('pareja'))) return 'En pareja';
+  return 'Personal';
+}
+
+function getTargetChecks(fp) {
+  return (FREQ_META[fp.frequency] || FREQ_META['Mensual']).checks;
+}
+
+function getCompletedChecks(fp, refDate = new Date()) {
+  const key = monthKey(refDate);
+  const target = getTargetChecks(fp);
+  const manual = (fp.monthlyChecks && fp.monthlyChecks[key]) || 0;
+  const recorded = data.entries.filter(e => e.fixedPaymentID === fp.id && monthKey(e.date) === key).length;
+  return Math.min(Math.max(manual, recorded), target);
+}
+
+function getMonthlyEquivalent(fp) {
+  if (!fp.isActive) return 0;
+  const amount = Number(fp.amount) || 0;
+  if (fp.cycleStart !== undefined && fp.cycleStart !== null) {
+    const start = toDate(fp.cycleStart);
+    const due = toDate(fp.nextDue);
+    const monthsDiff = (due.getFullYear() - start.getFullYear()) * 12 + (due.getMonth() - start.getMonth());
+    if (monthsDiff > 1 && ['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual', 'Único'].includes(fp.frequency)) {
+      return amount / monthsDiff;
+    }
+  }
+  const meta = FREQ_META[fp.frequency] || FREQ_META['Mensual'];
+  return amount * meta.mult;
+}
+
+function getPaidMonthlyFixed(fp) {
+  if (!fp.isActive) return 0;
+  const monthly = getMonthlyEquivalent(fp);
+  const target = Math.max(getTargetChecks(fp), 1);
+  const done = getCompletedChecks(fp);
+  return monthly * (Number(done) / Number(target));
+}
+
+function getRemainingMonthlyFixed(fp) {
+  return Math.max(getMonthlyEquivalent(fp) - getPaidMonthlyFixed(fp), 0);
+}
+
+function getFixedTotals(scope = null) {
+  const list = data.fixedPayments.filter(fp => fp.isActive && (!scope || getEffectiveScope(fp) === scope));
+  const monthly = list.reduce((s, fp) => s + getMonthlyEquivalent(fp), 0);
+  const paid = list.reduce((s, fp) => s + getPaidMonthlyFixed(fp), 0);
+  const remaining = list.reduce((s, fp) => s + getRemainingMonthlyFixed(fp), 0);
+  return {
+    monthly,
+    biweekly: monthly / 2.0,
+    weekly: monthly / 4.0,
+    paid,
+    remaining,
+    remainingBiweekly: remaining / 2.0,
+    remainingWeekly: remaining / 4.0,
+    count: list.length
+  };
+}
+
+function setMonthlyCheckCount(fpID, newCount, advanceDueDate = true) {
+  const fp = data.fixedPayments.find(p => p.id === fpID);
+  if (!fp) return;
+  const prev = getCompletedChecks(fp);
+  const target = getTargetChecks(fp);
+  const clamped = Math.min(Math.max(newCount, 0), target);
+  if (!fp.monthlyChecks) fp.monthlyChecks = {};
+  const key = monthKey();
+  if (clamped === 0) delete fp.monthlyChecks[key];
+  else fp.monthlyChecks[key] = clamped;
+
+  if (advanceDueDate && fp.frequency !== 'Único') {
+    const delta = clamped - prev;
+    if (delta > 0) {
+      for (let i = 0; i < delta; i++) {
+        fp.cycleStart = fp.nextDue;
+        fp.nextDue = stepDueDate(fp.nextDue, fp.frequency, 1);
+      }
+    } else if (delta < 0) {
+      for (let i = 0; i < Math.abs(delta); i++) {
+        const prevDue = stepDueDate(fp.nextDue, fp.frequency, -1);
+        fp.nextDue = prevDue;
+        fp.cycleStart = stepDueDate(prevDue, fp.frequency, -1);
+      }
+    }
+  }
+  saveData();
+  render();
+}
+
+function toggleFixedScope(fpID) {
+  const fp = data.fixedPayments.find(p => p.id === fpID);
+  if (!fp) return;
+  fp.scope = getEffectiveScope(fp) === 'Personal' ? 'En pareja' : 'Personal';
+  saveData();
+  render();
+}
+
+// Period Interval Helper
+function getPeriodInterval(periodName, customStartStr, customEndStr) {
+  const now = new Date();
+  const y = state.monthCursor.getFullYear();
+  const m = state.monthCursor.getMonth();
+  if (periodName === 'Mes actual') {
+    return {
+      start: new Date(y, m, 1, 0, 0, 0),
+      end: new Date(y, m + 1, 1, 0, 0, 0),
+      label: state.monthCursor.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+    };
+  }
+  if (periodName === 'Mes anterior') {
+    const start = new Date(y, m - 1, 1, 0, 0, 0);
+    const end = new Date(y, m, 1, 0, 0, 0);
+    return { start, end, label: start.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) };
+  }
+  if (periodName === 'Últimos 6 meses') {
+    const start = new Date(y, m - 5, 1, 0, 0, 0);
+    const end = new Date(y, m + 1, 1, 0, 0, 0);
+    return { start, end, label: 'Últimos 6 meses' };
+  }
+  if (periodName === 'Año en curso') {
+    return { start: new Date(now.getFullYear(), 0, 1), end: new Date(now.getFullYear() + 1, 0, 1), label: `Año ${now.getFullYear()}` };
+  }
+  if (periodName === 'Año anterior') {
+    const ly = now.getFullYear() - 1;
+    return { start: new Date(ly, 0, 1), end: new Date(ly + 1, 0, 1), label: `Año ${ly}` };
+  }
+  const s = new Date(fromInputDate(customStartStr) * 1000 + APPLE_EPOCH_OFFSET * 1000);
+  s.setHours(0,0,0,0);
+  const e = new Date(fromInputDate(customEndStr) * 1000 + APPLE_EPOCH_OFFSET * 1000);
+  e.setHours(23,59,59,999);
+  return { start: s, end: e, label: `${fmtDayMonth(s)} – ${fmtDayMonth(e)}` };
+}
+
+function getCategory(id) {
+  return data.categories.find(c => c.id === id) || { name: 'General', tint: '#BDA6FF', emoji: '✨' };
+}
+
+// Navigation & Sidebar
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function setPage(p) {
+  state.page = p;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === p));
+  const titles = {
+    'Inicio': ['Hola, ' + (data?.name || 'Planificador'), 'Tu resumen de hoy, pendientes y pulso financiero.'],
+    'Agenda': ['Agenda y calendario', 'Tus actividades y compromisos día por día.'],
+    'Semana': ['Vista semanal', 'Organiza tu semana de un vistazo.'],
+    'Metas': ['Metas e hitos', 'Tus objetivos grandes divididos en pasos claros.'],
+    'Finanzas': ['Tu dinero, claro.', 'Dinero, crédito y próximos pagos con claridad.'],
+    'Ajustes': ['Ajustes y respaldo', 'Personaliza tu espacio e importa o exporta tu base de datos.']
+  };
+  const [t, s] = titles[p] || ['Planificador', ''];
+  document.getElementById('topbar-title').textContent = t;
+  document.getElementById('topbar-sub').textContent = s;
+  render();
+}
+
+function render() {
+  if (!data) return;
+  document.getElementById('sidebar-date').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+  const container = document.getElementById('app-view');
+  if (state.page === 'Finanzas') container.innerHTML = renderFinanzas();
+  else if (state.page === 'Inicio') container.innerHTML = renderInicio();
+  else if (state.page === 'Agenda') container.innerHTML = renderAgenda();
+  else if (state.page === 'Semana') container.innerHTML = renderSemana();
+  else if (state.page === 'Metas') container.innerHTML = renderMetas();
+  else if (state.page === 'Ajustes') container.innerHTML = renderAjustes();
+}
+
+// ============================================================================
+// FINANZAS VIEW
+// ============================================================================
+function renderFinanzas() {
+  const mainName = getMainAccountName();
+  const mainBal = getMainAccountBalance();
+  const cashBal = getEfectivoBalance();
+  const avail = getAvailableBalance();
+  const boxes = getBoxesTotal();
+  const total = getTotalMoney();
+
+  let html = `
+    <div class="row-between" style="margin-bottom:18px;">
+      <div>
+        <div class="label-caps" style="color:var(--mint);">FINANZAS</div>
+        <div class="h1">Tu dinero, claro.</div>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="openTransferModal()">⇄ Transferir</button>
+        <button class="btn btn-lavender" onclick="openEntryModal()">+ Movimiento</button>
+      </div>
+    </div>
+
+    <!-- 3 Top Summary Cards -->
+    <div class="grid-3">
+      <div class="surface-raised" style="border-color:rgba(142,214,180,0.28);">
+        <div class="row-between">
+          <span class="label-caps">DINERO TOTAL</span>
+          <span class="pill pill-mint">Patrimonio líquido</span>
+        </div>
+        <div style="font-size:29px;font-weight:850;color:var(--mint);margin:8px 0 4px;">${fmtMoney(total)}</div>
+        <div class="sub">Disponible + cajas de ahorro</div>
+      </div>
+
+      <div class="surface-raised" style="border-color:rgba(189,166,255,0.35);cursor:pointer;" onclick="openAvailableModal()">
+        <div class="row-between">
+          <span class="label-caps">DISPONIBLE (${esc(mainName)} + Efectivo)</span>
+          <span style="color:var(--lavender);font-size:12px;font-weight:700;">✎ Configurar</span>
+        </div>
+        <div style="font-size:29px;font-weight:850;color:var(--lavender);margin:8px 0 4px;">${fmtMoney(avail)}</div>
+        <div class="sub">${esc(mainName)}: <b>${fmtMoney(mainBal)}</b> · Efectivo: <b>${fmtMoney(cashBal)}</b></div>
+      </div>
+
+      <div class="surface-raised" style="border-color:rgba(127,203,215,0.28);cursor:pointer;" onclick="state.finTab='Cajas y deudas';render();">
+        <div class="row-between">
+          <span class="label-caps">EN CAJAS DE AHORRO</span>
+          <span class="pill pill-sky">${data.accounts.filter(a=>!isEfectivoAccount(a)).length} cajas</span>
+        </div>
+        <div style="font-size:29px;font-weight:850;color:var(--sky);margin:8px 0 4px;">${fmtMoney(boxes)}</div>
+        <div class="sub">Separado de tu gasto diario</div>
+      </div>
+    </div>
+
+    <!-- Main Finance Tabs -->
+    <div class="row-between" style="margin-bottom:18px;">
+      <div class="seg-bar">
+        ${['Dashboard', 'Movimientos', 'Cajas y deudas'].map(t => `
+          <button class="seg-btn ${state.finTab === t ? 'active' : ''}" onclick="state.finTab='${t}';render();">${t}</button>
+        `).join('')}
+      </div>
+      ${state.finTab === 'Movimientos' ? `
+        <div class="row">
+          ${['Movimientos', 'Pagos fijos', 'Categorías'].map(c => `
+            <button class="filter-pill ${state.finCatalog === c ? 'active' : ''}" onclick="state.finCatalog='${c}';render();">${c}</button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  if (state.finTab === 'Dashboard') html += renderFinanceDashboard();
+  else if (state.finTab === 'Movimientos') {
+    if (state.finCatalog === 'Pagos fijos') html += renderFixedPaymentsCatalog();
+    else if (state.finCatalog === 'Categorías') html += renderCategoriesCatalog();
+    else html += renderMovementsCatalog();
+  } else {
+    html += renderBoxesAndDebts();
+  }
+  return html;
+}
+
+function shiftMonth(delta) {
+  const d = new Date(state.monthCursor);
+  d.setMonth(d.getMonth() + delta);
+  state.monthCursor = d;
+  render();
+}
+
+function renderPeriodBar(prefix, currentPeriod, startVal, endVal) {
+  const periods = ['Mes actual', 'Mes anterior', 'Últimos 6 meses', 'Año en curso', 'Año anterior', 'Personalizado'];
+  return `
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      ${periods.map(p => `
+        <button class="filter-pill ${currentPeriod === p ? 'active' : ''}" onclick="state.${prefix}Period='${p}';render();">${p}</button>
+      `).join('')}
+    </div>
+    ${currentPeriod === 'Personalizado' ? `
+      <div class="row" style="gap:8px;margin-bottom:10px;">
+        <span class="sub">Desde</span>
+        <input type="date" class="input" style="width:145px;padding:5px 9px;" value="${startVal}" onchange="state.${prefix}Start=this.value;render();">
+        <span class="sub">Hasta</span>
+        <input type="date" class="input" style="width:145px;padding:5px 9px;" value="${endVal}" onchange="state.${prefix}End=this.value;render();">
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderFinanceDashboard() {
+  const mInt = getPeriodInterval('Mes actual');
+  const mEntries = data.entries.filter(e => {
+    const d = toDate(e.date);
+    return d >= mInt.start && d < mInt.end;
+  });
+  const mIncome = mEntries.filter(e => e.kind === 'Ingreso').reduce((s, e) => s + Number(e.amount), 0);
+  const mExpense = mEntries.filter(countsAsExpense).reduce((s, e) => s + Number(e.amount), 0);
+  const mNet = mIncome - mExpense;
+
+  // Cash flow period
+  const cfInt = getPeriodInterval(state.cashFlowPeriod, state.cashFlowStart, state.cashFlowEnd);
+  const cfEntries = data.entries.filter(e => {
+    const d = toDate(e.date);
+    return d >= cfInt.start && d < cfInt.end;
+  });
+  const cfIncomeEntries = cfEntries.filter(e => e.kind === 'Ingreso');
+  const cfExpenseEntries = cfEntries.filter(countsAsExpense);
+  const cfIncome = cfIncomeEntries.reduce((s, e) => s + Number(e.amount), 0);
+  const cfExpense = cfExpenseEntries.reduce((s, e) => s + Number(e.amount), 0);
+  const cfMax = Math.max(cfIncome, cfExpense, 1);
+
+  // Category period
+  const catInt = getPeriodInterval(state.catPeriod, state.catStart, state.catEnd);
+  const catEntries = data.entries.filter(e => {
+    const d = toDate(e.date);
+    return countsAsExpense(e) && d >= catInt.start && d < catInt.end;
+  });
+  const catTotal = catEntries.reduce((s, e) => s + Number(e.amount), 0);
+  const byCat = {};
+  for (const e of catEntries) {
+    byCat[e.categoryID] = (byCat[e.categoryID] || 0) + Number(e.amount);
+  }
+  const catRows = Object.entries(byCat)
+    .map(([id, total]) => ({ cat: getCategory(id), id, total, pct: catTotal > 0 ? (total / catTotal) * 100 : 0 }))
+    .sort((a, b) => b.total - a.total);
+
+  return `
+    <!-- Month selector bar -->
+    <div class="surface">
+      <div class="row-between">
+        <div class="row">
+          <button class="icon-btn" onclick="shiftMonth(-1)">‹</button>
+          <div>
+            <div class="h2" style="text-transform:capitalize;">${mInt.label}</div>
+            <div class="sub">Pulso mensual de ingresos y gastos</div>
+          </div>
+          <button class="icon-btn" onclick="shiftMonth(1)">›</button>
+          <button class="btn btn-ghost btn-sm" onclick="state.monthCursor=new Date();render();">Hoy</button>
+        </div>
+        <div class="row" style="gap:24px;">
+          <div><div class="label-caps">INGRESOS MES</div><div style="font-size:19px;font-weight:800;color:var(--mint);">${fmtMoney(mIncome)}</div></div>
+          <div><div class="label-caps">GASTOS MES</div><div style="font-size:19px;font-weight:800;color:var(--peach);">${fmtMoney(mExpense)}</div></div>
+          <div><div class="label-caps">BALANCE</div><div style="font-size:19px;font-weight:800;color:${mNet>=0?'var(--mint)':'var(--peach)'};">${fmtMoney(mNet)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 1: Cash Flow + Where is your money -->
+    <div class="grid-2">
+      <!-- Ingresos y gastos -->
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:10px;">
+          <div>
+            <div class="h2">Ingresos y gastos</div>
+            <div class="sub">${cfInt.label} · Pasa el mouse por las barras para ver de qué se componen.</div>
+          </div>
+          <span class="pill ${cfIncome - cfExpense >= 0 ? 'pill-mint' : 'pill-peach'}">Balance: ${fmtMoney(cfIncome - cfExpense)}</span>
+        </div>
+        ${renderPeriodBar('cashFlow', state.cashFlowPeriod, state.cashFlowStart, state.cashFlowEnd)}
+        <div style="display:flex;align-items:flex-end;gap:28px;height:225px;padding:18px 24px 10px;background:rgba(14,17,23,0.45);border-radius:16px;border:1px solid var(--line);">
+          <div class="bar-col ${state.cashFlowHover==='income'?'hovered':''}" style="--glow-color:rgba(142,214,180,0.75);" onmouseenter="state.cashFlowHover='income';render();" onmouseleave="state.cashFlowHover=null;render();">
+            <div class="bar-top-val" style="color:var(--mint);border-color:rgba(142,214,180,0.4);">${fmtMoney(cfIncome)}</div>
+            <div class="bar-rect" style="height:${Math.max((cfIncome/cfMax)*145, 8)}px;background:linear-gradient(180deg, var(--mint), rgba(142,214,180,0.45));"></div>
+            <div style="margin-top:8px;font-size:12px;font-weight:700;">Ingresos</div>
+          </div>
+          <div class="bar-col ${state.cashFlowHover==='expense'?'hovered':''}" style="--glow-color:rgba(255,184,140,0.75);" onmouseenter="state.cashFlowHover='expense';render();" onmouseleave="state.cashFlowHover=null;render();">
+            <div class="bar-top-val" style="color:var(--peach);border-color:rgba(255,184,140,0.4);">${fmtMoney(cfExpense)}</div>
+            <div class="bar-rect" style="height:${Math.max((cfExpense/cfMax)*145, 8)}px;background:linear-gradient(180deg, var(--peach), rgba(255,184,140,0.45));"></div>
+            <div style="margin-top:8px;font-size:12px;font-weight:700;">Gastos</div>
+          </div>
+        </div>
+        ${renderCashFlowBreakdown(state.cashFlowHover, cfIncome, cfExpense, cfIncomeEntries, cfExpenseEntries)}
+      </div>
+
+      <!-- Dónde está tu dinero -->
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:14px;">
+          <div>
+            <div class="h2">Dónde está tu dinero</div>
+            <div class="sub">Distribución actual entre tu disponible y tus cajas.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openAvailableModal()">Editar disponible</button>
+        </div>
+        <div class="item-row" onclick="openAvailableModal()" style="cursor:pointer;">
+          <div class="badge-ico" style="background:rgba(189,166,255,0.16);color:var(--lavender);">💳</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">${esc(getMainAccountName())}</div>
+            <div class="sub">Cuenta principal disponible</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--lavender);">${fmtMoney(getMainAccountBalance())}</div>
+        </div>
+        <div class="item-row" onclick="openAvailableModal()" style="cursor:pointer;">
+          <div class="badge-ico" style="background:rgba(142,214,180,0.16);color:var(--mint);">💵</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">Efectivo</div>
+            <div class="sub">Suma directamente a tu dinero disponible</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--mint);">${fmtMoney(getEfectivoBalance())}</div>
+        </div>
+        ${data.accounts.filter(a => !isEfectivoAccount(a)).map(acc => `
+          <div class="item-row" onclick="openAccountModal('${acc.id}')" style="cursor:pointer;">
+            <div class="badge-ico" style="background:rgba(127,203,215,0.16);color:var(--sky);">🏦</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">${esc(acc.name)}</div>
+              <div class="sub">Caja de ahorro</div>
+            </div>
+            <div style="font-size:16px;font-weight:800;color:var(--sky);">${fmtMoney(getBalance(acc.id))}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Row 2: Gastos por categoría + Presupuestos -->
+    <div class="grid-2">
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:10px;">
+          <div>
+            <div class="h2">Gastos por categoría</div>
+            <div class="sub">${catInt.label} · Total y porcentaje sobre el gasto del periodo.</div>
+          </div>
+          <span class="pill pill-peach">Total: ${fmtMoney(catTotal)}</span>
+        </div>
+        ${renderPeriodBar('cat', state.catPeriod, state.catStart, state.catEnd)}
+        ${catRows.length === 0 ? `<div class="sub" style="padding:30px 0;text-align:center;">Sin gastos registrados en este periodo.</div>` : `
+          <div class="row" style="gap:20px;align-items:center;flex-wrap:wrap;">
+            <div style="width:185px;height:185px;position:relative;display:flex;align-items:center;justify-content:center;">
+              ${renderDonutSVG(catRows, catTotal)}
+              <div style="position:absolute;text-align:center;pointer-events:none;padding:12px;">
+                <div class="label-caps" style="font-size:8px;">${state.catHoverID ? esc(getCategory(state.catHoverID).name) : 'TOTAL GASTADO'}</div>
+                <div style="font-size:15px;font-weight:850;color:var(--text);margin-top:2px;">
+                  ${state.catHoverID ? fmtMoney(byCat[state.catHoverID] || 0) : fmtMoney(catTotal)}
+                </div>
+                ${state.catHoverID && catTotal > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--peach);">${Math.round(((byCat[state.catHoverID]||0)/catTotal)*100)}% del total</div>` : ''}
+              </div>
+            </div>
+            <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;">
+              ${catRows.slice(0, 7).map(r => `
+                <div class="row-between" style="padding:7px 10px;border-radius:10px;background:${state.catHoverID===r.id?'var(--raised)':'transparent'};border:1px solid ${state.catHoverID===r.id?(r.cat.tint||'#BDA6FF'):'transparent'};cursor:pointer;"
+                     onmouseenter="state.catHoverID='${r.id}';render();" onmouseleave="state.catHoverID=null;render();">
+                  <div class="row" style="gap:8px;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:${r.cat.tint||'#BDA6FF'};display:inline-block;"></span>
+                    <span style="font-size:12.5px;font-weight:700;">${r.cat.emoji ? r.cat.emoji + ' ' : ''}${esc(r.cat.name)}</span>
+                  </div>
+                  <div class="row" style="gap:8px;">
+                    <span class="pill" style="padding:2px 7px;font-size:10px;background:rgba(255,255,255,0.06);color:var(--muted);">${Math.round(r.pct)}%</span>
+                    <span style="font-size:12.5px;font-weight:800;">${fmtMoney(r.total)}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ${renderCategoryHoverDialog(state.catHoverID, catEntries, catTotal)}
+        `}
+      </div>
+
+      <!-- Presupuestos -->
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:14px;">
+          <div>
+            <div class="h2">Presupuestos</div>
+            <div class="sub">Límites de gasto para mantener el ritmo.</div>
+          </div>
+          <button class="btn btn-lavender btn-sm" onclick="openBudgetModal()">+ Presupuesto</button>
+        </div>
+        ${(data.budgets || []).length === 0 ? `<div class="sub" style="padding:30px 0;text-align:center;">Crea un presupuesto semanal o mensual para cuidar tu liquidez.</div>` :
+          data.budgets.map(b => {
+            const spent = getBudgetSpent(b);
+            const limit = Math.max(Number(b.limit) || 1, 1);
+            const ratio = Math.min(spent / limit, 1);
+            const color = ratio >= 1 ? 'var(--peach)' : ratio >= 0.8 ? 'var(--gold)' : 'var(--mint)';
+            return `
+              <div class="item-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                <div class="row-between">
+                  <div>
+                    <div style="font-weight:700;">${esc(b.name)}</div>
+                    <div class="sub">${b.period} · ${b.categoryID ? esc(getCategory(b.categoryID).name) : 'Todas las categorías'}</div>
+                  </div>
+                  <div class="row" style="gap:8px;">
+                    <span style="font-weight:800;color:${color};">${fmtMoney(spent)} / ${fmtMoney(limit)}</span>
+                    <button class="icon-btn" style="width:28px;height:28px;font-size:12px;" onclick="openBudgetModal('${b.id}')">✎</button>
+                    <button class="icon-btn" style="width:28px;height:28px;font-size:12px;" onclick="deleteBudget('${b.id}')">🗑</button>
+                  </div>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width:${ratio*100}%;background:${color};"></div></div>
+              </div>
+            `;
+          }).join('')
+        }
+      </div>
+    </div>
+
+    <!-- Row 3: Mapa de Calor de Gastos -->
+    ${renderExpenseHeatmapCard()}
+  `;
+}
+
+function renderCashFlowBreakdown(hoverKind, incTotal, expTotal, incEntries, expEntries) {
+  if (!hoverKind) return '';
+  const isInc = hoverKind === 'income';
+  const list = isInc ? incEntries : expEntries;
+  const total = isInc ? incTotal : expTotal;
+  const color = isInc ? 'var(--mint)' : 'var(--peach)';
+  const byCat = {};
+  for (const e of list) byCat[e.categoryID] = (byCat[e.categoryID] || 0) + Number(e.amount);
+  const topCats = Object.entries(byCat)
+    .map(([id, amt]) => ({ cat: getCategory(id), amt, pct: total > 0 ? Math.round((amt / total) * 100) : 0 }))
+    .sort((a, b) => b.amt - a.amt)
+    .slice(0, 4);
+  const topMovs = [...list].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 3);
+
+  return `
+    <div class="chart-dialog" style="border-color:${color};">
+      <div class="row-between" style="margin-bottom:8px;">
+        <span style="font-weight:800;color:${color};">${isInc ? 'Desglose de Ingresos' : 'Desglose de Gastos'} (${list.length} mov.)</span>
+        <span style="font-weight:850;color:${color};">${fmtMoney(total)}</span>
+      </div>
+      ${topCats.map(c => `
+        <div class="row-between" style="font-size:12px;padding:3px 0;">
+          <span>${c.cat.emoji || '•'} ${esc(c.cat.name)} (${c.pct}%)</span>
+          <b>${fmtMoney(c.amt)}</b>
+        </div>
+      `).join('')}
+      ${topMovs.length > 0 ? `
+        <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-size:11px;color:var(--muted);">
+          Principales: ${topMovs.map(m => `${esc(m.title)} (${fmtMoney(m.amount)})`).join(' · ')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderDonutSVG(rows, total) {
+  const r = 72;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  const circles = rows.map(item => {
+    const frac = total > 0 ? item.total / total : 0;
+    const len = frac * c;
+    const isHov = state.catHoverID === item.id;
+    const svg = `<circle cx="92" cy="92" r="${r}" fill="transparent" stroke="${item.cat.tint || '#BDA6FF'}"
+      stroke-width="${isHov ? 22 : 17}" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-offset}"
+      style="cursor:pointer;transition:all 0.15s;"
+      onmouseenter="state.catHoverID='${item.id}';render();" onmouseleave="state.catHoverID=null;render();" />`;
+    offset += len;
+    return svg;
+  }).join('');
+  return `<svg width="184" height="184" viewBox="0 0 184 184" style="transform:rotate(-90deg);">${circles}</svg>`;
+}
+
+function renderCategoryHoverDialog(catID, catEntries, catTotal) {
+  if (!catID) return '';
+  const cat = getCategory(catID);
+  const list = catEntries.filter(e => e.categoryID === catID).sort((a, b) => Number(b.amount) - Number(a.amount));
+  const total = list.reduce((s, e) => s + Number(e.amount), 0);
+  const pct = catTotal > 0 ? Math.round((total / catTotal) * 100) : 0;
+  return `
+    <div class="chart-dialog" style="border-color:${cat.tint || '#BDA6FF'};">
+      <div class="row-between" style="margin-bottom:6px;">
+        <span style="font-weight:800;color:${cat.tint || '#BDA6FF'};">${cat.emoji || '✨'} ${esc(cat.name)} · ${pct}% del total</span>
+        <span style="font-weight:850;">${fmtMoney(total)}</span>
+      </div>
+      ${list.slice(0, 4).map(m => `
+        <div class="row-between" style="font-size:11.5px;padding:2px 0;color:var(--muted);">
+          <span>${esc(m.title)} (${fmtDayMonth(m.date)})</span>
+          <b style="color:var(--text);">${fmtMoney(m.amount)}</b>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderExpenseHeatmapCard() {
+  const hInt = getPeriodInterval(state.heatPeriod, state.heatStart, state.heatEnd);
+  const expenses = data.entries.filter(e => {
+    const d = toDate(e.date);
+    return countsAsExpense(e) && d >= hInt.start && d < hInt.end;
+  });
+
+  // Group by day YYYY-MM-DD and weekday (0=Lun .. 6=Dom)
+  const byDay = {};
+  const byDayEntries = {};
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+  const weekdayEntries = [[], [], [], [], [], [], []];
+  const weekdayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const weekdayShort = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+  for (const e of expenses) {
+    const dKey = toInputDate(e.date);
+    byDay[dKey] = (byDay[dKey] || 0) + Number(e.amount);
+    if (!byDayEntries[dKey]) byDayEntries[dKey] = [];
+    byDayEntries[dKey].push(e);
+
+    const jsDay = toDate(e.date).getDay(); // 0=Dom..6=Sab
+    const idx = (jsDay + 6) % 7; // 0=Lun..6=Dom
+    weekdayTotals[idx] += Number(e.amount);
+    weekdayEntries[idx].push(e);
+  }
+
+  let peakWeekdayIdx = 0;
+  weekdayTotals.forEach((v, i) => { if (v > weekdayTotals[peakWeekdayIdx]) peakWeekdayIdx = i; });
+  const peakDayEntry = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+
+  // Calendar grid for the month of hInt.start (or monthCursor)
+  const calBase = state.heatPeriod === 'Mes anterior'
+    ? new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth() - 1, 1)
+    : new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth(), 1);
+  const year = calBase.getFullYear();
+  const month = calBase.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstJsDay = new Date(year, month, 1).getDay();
+  const leadingEmpty = (firstJsDay + 6) % 7;
+  const maxDayAmt = Math.max(...Object.values(byDay), 1);
+  const maxWeekdayAmt = Math.max(...weekdayTotals, 1);
+
+  let calendarCells = '';
+  for (let i = 0; i < leadingEmpty; i++) calendarCells += `<div></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const amt = byDay[key] || 0;
+    const ratio = amt > 0 ? Math.min(Math.max(amt / maxDayAmt, 0.18), 1) : 0;
+    const bg = amt > 0 ? `rgba(255,184,140,${(0.18 + ratio * 0.68).toFixed(2)})` : 'rgba(30,37,53,0.4)';
+    const textCol = ratio > 0.6 ? '#0E1117' : 'var(--text)';
+    calendarCells += `
+      <div class="heat-cell ${state.heatHoverDay===key?'active':''}" style="background:${bg};color:${textCol};"
+           onmouseenter="state.heatHoverDay='${key}';render();" onclick="state.heatHoverDay='${key}';render();">
+        <div style="font-size:11px;font-weight:800;">${d}</div>
+        ${amt > 0 ? `<div style="font-size:9px;font-weight:700;">$${Math.round(amt)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:10px;">
+        <div>
+          <div class="h2">Mapa de calor de gastos</div>
+          <div class="sub">Descubre en qué días de la semana y fechas del mes gastas más dinero.</div>
+        </div>
+        <div class="row">
+          ${weekdayTotals[peakWeekdayIdx] > 0 ? `<span class="pill pill-peach">🔥 Día que más gastas: ${weekdayNames[peakWeekdayIdx]} (${fmtMoney(weekdayTotals[peakWeekdayIdx])})</span>` : ''}
+          ${peakDayEntry ? `<span class="pill">Fecha récord: ${peakDayEntry[0]} (${fmtMoney(peakDayEntry[1])})</span>` : ''}
+        </div>
+      </div>
+
+      <div class="row-between" style="margin-bottom:12px;">
+        ${renderPeriodBar('heat', state.heatPeriod, state.heatStart, state.heatEnd)}
+        <div class="seg-bar">
+          <button class="seg-btn ${state.heatMode==='calendar'?'active':''}" onclick="state.heatMode='calendar';render();">Calendario día por día</button>
+          <button class="seg-btn ${state.heatMode==='weekday'?'active':''}" onclick="state.heatMode='weekday';render();">Por día de la semana (Lun–Dom)</button>
+        </div>
+      </div>
+
+      ${state.heatMode === 'calendar' ? `
+        <div class="heat-grid" style="margin-bottom:6px;">
+          ${weekdayShort.map(w => `<div style="text-align:center;font-size:10px;font-weight:800;color:var(--muted);">${w}</div>`).join('')}
+        </div>
+        <div class="heat-grid">${calendarCells}</div>
+        ${state.heatHoverDay && byDay[state.heatHoverDay] ? `
+          <div class="chart-dialog" style="border-color:var(--peach);">
+            <div class="row-between" style="margin-bottom:4px;">
+              <b style="color:var(--peach);">Gastos del ${state.heatHoverDay}</b>
+              <b>${fmtMoney(byDay[state.heatHoverDay])}</b>
+            </div>
+            ${(byDayEntries[state.heatHoverDay] || []).map(e => `
+              <div class="row-between" style="font-size:12px;padding:2px 0;">
+                <span>${esc(e.title)} · <span class="sub">${esc(getCategory(e.categoryID).name)}</span></span>
+                <b>${fmtMoney(e.amount)}</b>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      ` : `
+        <div style="display:flex;align-items:flex-end;gap:12px;height:210px;padding:16px;background:rgba(14,17,23,0.45);border-radius:16px;border:1px solid var(--line);">
+          ${weekdayTotals.map((amt, idx) => `
+            <div class="bar-col" style="--glow-color:rgba(255,184,140,0.75);padding:0 4px;"
+                 onmouseenter="state.heatHoverWeekday=${idx};render();" onmouseleave="state.heatHoverWeekday=null;render();">
+              <div class="bar-top-val" style="font-size:10.5px;color:${idx===peakWeekdayIdx?'var(--peach)':'var(--text)'};">${fmtMoney(amt)}</div>
+              <div class="bar-rect" style="height:${Math.max((amt/maxWeekdayAmt)*130, 6)}px;background:${idx===peakWeekdayIdx?'var(--peach)':'var(--lavender)'};"></div>
+              <div style="margin-top:7px;font-size:11px;font-weight:700;">${weekdayShort[idx]}</div>
+            </div>
+          `).join('')}
+        </div>
+        ${state.heatHoverWeekday !== null ? `
+          <div class="chart-dialog" style="border-color:var(--peach);">
+            <div class="row-between" style="margin-bottom:4px;">
+              <b style="color:var(--peach);">Gastos acumulados en ${weekdayNames[state.heatHoverWeekday]} (${weekdayEntries[state.heatHoverWeekday].length} mov.)</b>
+              <b>${fmtMoney(weekdayTotals[state.heatHoverWeekday])}</b>
+            </div>
+            ${weekdayEntries[state.heatHoverWeekday].sort((a,b)=>Number(b.amount)-Number(a.amount)).slice(0,4).map(e => `
+              <div class="row-between" style="font-size:12px;padding:2px 0;">
+                <span>${esc(e.title)} (${fmtDayMonth(e.date)})</span>
+                <b>${fmtMoney(e.amount)}</b>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      `}
+    </div>
+  `;
+}
+
+// ============================================================================
+// PAGOS FIJOS & SIMULADOR DE INGRESO (WITH APARTADO QUINCENAL)
+// ============================================================================
+function renderFixedPaymentsCatalog() {
+  const allTotals = getFixedTotals(null);
+  const personalTotals = getFixedTotals('Personal');
+  const coupleTotals = getFixedTotals('En pareja');
+  const progress = allTotals.monthly > 0 ? Math.min(allTotals.paid / allTotals.monthly, 1) : 0;
+
+  // Simulator state
+  const mode = data.simulatedIncomeMode || 'remaining'; // remaining | total | biweekly | weekly
+  const scopeKey = data.simulatedIncomeScope || 'all'; // all | personal | couple
+  const simScope = scopeKey === 'personal' ? 'Personal' : scopeKey === 'couple' ? 'En pareja' : null;
+  const scopedTotals = getFixedTotals(simScope);
+
+  const simIncome = Number(data.simulatedIncome) || 0;
+  const deduction = mode === 'total'
+    ? scopedTotals.monthly
+    : mode === 'biweekly'
+      ? scopedTotals.biweekly
+      : mode === 'weekly'
+        ? scopedTotals.weekly
+        : scopedTotals.remaining;
+  const scopeSuffix = simScope === 'Personal' ? ' (Personales)' : simScope === 'En pareja' ? ' (En pareja)' : ' (Todos)';
+  const deductionLabel = (mode === 'total'
+    ? 'Total fijos del mes'
+    : mode === 'biweekly'
+      ? 'Apartado fijo quincenal'
+      : mode === 'weekly'
+        ? 'Apartado fijo semanal'
+        : 'Falta pagar este mes') + scopeSuffix;
+  const freeAmount = simIncome - deduction;
+  const freePct = simIncome > 0 ? Math.round((freeAmount / simIncome) * 100) : 0;
+
+  // Known custom tags
+  const allTags = Array.from(new Set(data.fixedPayments.flatMap(fp => fp.tags || []))).sort();
+
+  const sortedPayments = [...data.fixedPayments].sort((a, b) => toDate(a.nextDue) - toDate(b.nextDue));
+  const filtered = sortedPayments.filter(fp => {
+    if (state.fpScopeFilter !== 'ALL' && getEffectiveScope(fp) !== state.fpScopeFilter) return false;
+    if (state.fpTagFilter !== 'ALL' && !(fp.tags || []).includes(state.fpTagFilter)) return false;
+    return true;
+  });
+
+  const selectedList = sortedPayments.filter(fp => state.selectedFixedIDs[fp.id]);
+  const selectedChargeSum = selectedList.reduce((s, fp) => s + Number(fp.amount), 0);
+  const selectedMonthlySum = selectedList.reduce((s, fp) => s + getMonthlyEquivalent(fp), 0);
+  const selectedRemainingSum = selectedList.reduce((s, fp) => s + getRemainingMonthlyFixed(fp), 0);
+
+  return `
+    <!-- Top Fixed Reserve Summary -->
+    <div class="surface-raised" style="border-color:rgba(142,214,180,0.32);margin-bottom:16px;">
+      <div class="row-between" style="margin-bottom:10px;">
+        <span class="label-caps" style="color:var(--mint);">✨ GASTO Y APARTADO MENSUAL FIJO</span>
+        <span class="pill pill-mint">${allTotals.count} activos este mes</span>
+      </div>
+      <div class="row-between" style="align-items:baseline;margin-bottom:14px;">
+        <div>
+          <span style="font-size:34px;font-weight:850;">${fmtMoney(allTotals.monthly)}</span>
+          <span style="color:var(--mint);font-weight:700;"> / mes</span>
+        </div>
+        <div class="row" style="gap:24px;">
+          <div style="text-align:right;">
+            <div class="label-caps">APARTADO QUINCENAL</div>
+            <div style="font-size:19px;font-weight:850;color:var(--mint);">${fmtMoney(allTotals.biweekly)} / qna</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="label-caps">APARTADO SEMANAL</div>
+            <div style="font-size:19px;font-weight:850;color:var(--lavender);">${fmtMoney(allTotals.weekly)} / sem</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress-track" style="margin-bottom:8px;">
+        <div class="progress-fill" style="width:${progress*100}%;background:var(--mint);"></div>
+      </div>
+      <div class="row-between" style="font-size:12px;font-weight:700;">
+        <span style="color:var(--mint);">Cubierto este mes: ${fmtMoney(allTotals.paid)}</span>
+        <span style="color:${allTotals.remaining>0?'var(--peach)':'var(--mint)'};">Falta pagar este mes: ${fmtMoney(allTotals.remaining)} (${fmtMoney(allTotals.remainingBiweekly)}/qna · ${fmtMoney(allTotals.remainingWeekly)}/sem)</span>
+      </div>
+    </div>
+
+    <!-- Personal vs En Pareja Cards -->
+    <div class="grid-2">
+      <div class="surface" style="margin-bottom:0;cursor:pointer;border-color:${state.fpScopeFilter==='Personal'?'var(--lavender)':'var(--line)'};"
+           onclick="state.fpScopeFilter = state.fpScopeFilter==='Personal' ? 'ALL' : 'Personal'; render();">
+        <div class="row-between">
+          <div>
+            <div class="label-caps" style="color:var(--lavender);">👤 APARTADO GASTOS PERSONALES</div>
+            <div class="sub">${personalTotals.count} activos · clic para filtrar</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="label-caps">QUINCENAL · SEMANAL</div>
+            <div style="font-size:12.5px;font-weight:800;color:var(--lavender);">${fmtMoney(personalTotals.biweekly)}/qna · ${fmtMoney(personalTotals.weekly)}/sem</div>
+          </div>
+        </div>
+        <div style="font-size:25px;font-weight:850;margin:8px 0;">${fmtMoney(personalTotals.monthly)} <span style="font-size:13px;color:var(--lavender);">/ mes</span></div>
+        <div class="row-between" style="font-size:11px;font-weight:700;">
+          <span style="color:var(--mint);">Cubierto: ${fmtMoney(personalTotals.paid)}</span>
+          <span style="color:var(--peach);">Falta: ${fmtMoney(personalTotals.remaining)}</span>
+        </div>
+      </div>
+
+      <div class="surface" style="margin-bottom:0;cursor:pointer;border-color:${state.fpScopeFilter==='En pareja'?'var(--peach)':'var(--line)'};"
+           onclick="state.fpScopeFilter = state.fpScopeFilter==='En pareja' ? 'ALL' : 'En pareja'; render();">
+        <div class="row-between">
+          <div>
+            <div class="label-caps" style="color:var(--peach);">❤️ APARTADO GASTOS EN PAREJA</div>
+            <div class="sub">${coupleTotals.count} activos · clic para filtrar</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="label-caps">QUINCENAL · SEMANAL</div>
+            <div style="font-size:12.5px;font-weight:800;color:var(--peach);">${fmtMoney(coupleTotals.biweekly)}/qna · ${fmtMoney(coupleTotals.weekly)}/sem</div>
+          </div>
+        </div>
+        <div style="font-size:25px;font-weight:850;margin:8px 0;">${fmtMoney(coupleTotals.monthly)} <span style="font-size:13px;color:var(--peach);">/ mes</span></div>
+        <div class="row-between" style="font-size:11px;font-weight:700;">
+          <span style="color:var(--mint);">Cubierto: ${fmtMoney(coupleTotals.paid)}</span>
+          <span style="color:var(--peach);">Falta: ${fmtMoney(coupleTotals.remaining)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULADOR DE INGRESO Y LIQUIDEZ -->
+    <div class="surface" style="border-color:rgba(189,166,255,0.35);">
+      <div class="row-between" style="margin-bottom:12px;">
+        <div>
+          <div class="h2">Simulador de ingreso y liquidez</div>
+          <div class="sub">Compara tu ingreso contra lo que falta del mes, el total mensual, el apartado quincenal o el apartado semanal.</div>
+        </div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;">
+          <button class="filter-pill ${mode==='remaining'?'active':''}" onclick="setSimMode('remaining')">Vs. Falta del mes</button>
+          <button class="filter-pill ${mode==='total'?'active':''}" onclick="setSimMode('total')">Vs. Total fijo mensual</button>
+          <button class="filter-pill ${mode==='biweekly'?'active':''}" onclick="setSimMode('biweekly')">Vs. Apartado quincenal</button>
+          <button class="filter-pill ${mode==='weekly'?'active':''}" onclick="setSimMode('weekly')">Vs. Apartado semanal</button>
+        </div>
+      </div>
+
+      <div class="row" style="gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <span class="label-caps">FILTRAR GASTOS FIJOS EN SIMULADOR:</span>
+        <button class="filter-pill ${scopeKey==='all'?'active-mint':''}" onclick="setSimScope('all')">Todos (${fmtMoney(allTotals.monthly)}/mes)</button>
+        <button class="filter-pill ${scopeKey==='personal'?'active':''}" onclick="setSimScope('personal')">👤 Gastos personales (${fmtMoney(personalTotals.monthly)}/mes)</button>
+        <button class="filter-pill ${scopeKey==='couple'?'active-peach':''}" onclick="setSimScope('couple')">❤️ Gastos en pareja (${fmtMoney(coupleTotals.monthly)}/mes)</button>
+      </div>
+
+      <div class="row" style="gap:14px;flex-wrap:wrap;">
+        <div style="background:var(--bg);border:1px solid rgba(142,214,180,0.4);border-radius:14px;padding:12px 15px;width:240px;">
+          <div class="label-caps">TU INGRESO ESTIMADO (${data.currencyCode})</div>
+          <div class="row" style="gap:4px;margin-top:4px;">
+            <span style="font-size:20px;font-weight:800;color:var(--mint);">$</span>
+            <input type="number" step="0.01" class="input" style="border:none;background:transparent;font-size:22px;font-weight:850;color:var(--mint);padding:0;"
+                   value="${simIncome || ''}" placeholder="0.00" oninput="onSimIncomeInput(this.value)">
+          </div>
+        </div>
+        <span style="font-size:18px;font-weight:800;color:var(--muted);">−</span>
+        <div style="background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:12px 15px;min-width:220px;">
+          <div class="label-caps">${esc(deductionLabel)}</div>
+          <div style="font-size:22px;font-weight:850;color:var(--peach);margin-top:4px;" id="sim-deduction-val">${fmtMoney(deduction)}</div>
+        </div>
+        <span style="font-size:18px;font-weight:800;color:var(--muted);">=</span>
+        <div style="flex:1;min-width:240px;background:var(--bg);border:1px solid ${freeAmount>=0?'rgba(142,214,180,0.4)':'rgba(255,184,140,0.4)'};border-radius:14px;padding:12px 15px;">
+          <div class="row-between">
+            <span class="label-caps" id="sim-free-label">${freeAmount >= 0 ? 'TE QUEDA LIBRE' : 'TE FALTA CUBRIR'}</span>
+            <span style="font-size:11px;font-weight:800;color:${freeAmount>=0?'var(--mint)':'var(--peach)'};" id="sim-free-pct">${simIncome > 0 ? freePct + '% libre' : ''}</span>
+          </div>
+          <div class="row-between" style="margin-top:4px;">
+            <span style="font-size:24px;font-weight:850;color:${freeAmount>=0?'var(--mint)':'var(--peach)'};" id="sim-free-val">${fmtMoney(freeAmount)}</span>
+            <button class="btn btn-lavender btn-sm" onclick="openBudgetModal(null, Math.max(${freeAmount}, 0))">Usar libre para presupuesto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tus pagos fijos list -->
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div>
+          <div class="h2">Tus pagos fijos</div>
+          <div class="sub">Al palomear o registrar un pago se avanza automáticamente a la siguiente fecha. Selecciona varios para sumarlos.</div>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" onclick="selectVisibleFixed(${JSON.stringify(filtered.map(f=>f.id)).replace(/"/g, '&quot;')})">Seleccionar visibles</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectPendingFixed()">Seleccionar pendientes</button>
+          <button class="btn btn-lavender btn-sm" onclick="openFixedModal()">+ Nuevo pago fijo</button>
+        </div>
+      </div>
+
+      <!-- Scope & Tag Filter Pills -->
+      <div class="row" style="gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="filter-pill ${state.fpScopeFilter==='ALL'&&state.fpTagFilter==='ALL'?'active':''}" onclick="state.fpScopeFilter='ALL';state.fpTagFilter='ALL';render();">Todos (${data.fixedPayments.length})</button>
+        <button class="filter-pill ${state.fpScopeFilter==='Personal'?'active':''}" onclick="state.fpScopeFilter=state.fpScopeFilter==='Personal'?'ALL':'Personal';render();">👤 Personal (${data.fixedPayments.filter(p=>getEffectiveScope(p)==='Personal').length})</button>
+        <button class="filter-pill ${state.fpScopeFilter==='En pareja'?'active-peach':''}" onclick="state.fpScopeFilter=state.fpScopeFilter==='En pareja'?'ALL':'En pareja';render();">❤️ En pareja (${data.fixedPayments.filter(p=>getEffectiveScope(p)==='En pareja').length})</button>
+        ${allTags.map(t => `
+          <button class="filter-pill ${state.fpTagFilter===t?'active':''}" onclick="state.fpTagFilter=state.fpTagFilter==='${esc(t)}'?'ALL':'${esc(t)}';render();">🏷 ${esc(t)}</button>
+        `).join('')}
+      </div>
+
+      <!-- Automatic Sum Bar for Selected Fixed Payments -->
+      ${selectedList.length > 0 ? `
+        <div class="surface-raised" style="border-color:var(--lavender);padding:13px 16px;margin-bottom:14px;background:rgba(189,166,255,0.12);">
+          <div class="row-between">
+            <div class="row">
+              <div class="badge-ico" style="background:var(--lavender);color:#0E1117;font-weight:900;">±</div>
+              <div>
+                <div class="label-caps">SUMA AUTOMÁTICA DE SELECCIONADOS</div>
+                <div style="font-weight:800;">${selectedList.length} pago${selectedList.length===1?'':'s'} seleccionado${selectedList.length===1?'':'s'}</div>
+              </div>
+            </div>
+            <div class="row" style="gap:22px;">
+              <div style="text-align:right;"><div class="label-caps">SUMA DE COBROS</div><div style="font-size:17px;font-weight:850;color:var(--lavender);">${fmtMoney(selectedChargeSum)}</div></div>
+              <div style="text-align:right;"><div class="label-caps">EQUIV. MENSUAL</div><div style="font-size:17px;font-weight:850;color:var(--mint);">${fmtMoney(selectedMonthlySum)}</div></div>
+              <div style="text-align:right;"><div class="label-caps">FALTA ESTE MES</div><div style="font-size:17px;font-weight:850;color:var(--peach);">${fmtMoney(selectedRemainingSum)}</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="state.selectedFixedIDs={};render();">Limpiar</button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${filtered.map(fp => {
+        const target = getTargetChecks(fp);
+        const done = getCompletedChecks(fp);
+        const isCovered = done >= target;
+        const monthlyEq = getMonthlyEquivalent(fp);
+        const scope = getEffectiveScope(fp);
+        const isSel = !!state.selectedFixedIDs[fp.id];
+        return `
+          <div class="item-row" style="border-color:${isSel?'var(--lavender)':isCovered?'rgba(142,214,180,0.35)':'var(--line)'};">
+            <input type="checkbox" ${isSel?'checked':''} onchange="state.selectedFixedIDs['${fp.id}']=this.checked;render();" style="width:17px;height:17px;accent-color:var(--lavender);cursor:pointer;">
+            <button class="btn btn-sm ${isCovered?'btn-mint':'btn-ghost'}" onclick="setMonthlyCheckCount('${fp.id}', ${done < target ? done + 1 : 0}, true)" title="Palomear y avanzar al siguiente cobro">
+              ${isCovered ? '✓ Cubierto' : (target > 1 ? `${done} de ${target}` : '☐ Pendiente')}
+            </button>
+            ${target > 1 ? `
+              <div class="row" style="gap:3px;">
+                <button class="icon-btn" style="width:24px;height:24px;font-size:12px;" onclick="setMonthlyCheckCount('${fp.id}', ${done - 1}, true)">−</button>
+                <button class="icon-btn" style="width:24px;height:24px;font-size:12px;" onclick="setMonthlyCheckCount('${fp.id}', ${done + 1}, true)">+</button>
+              </div>
+            ` : ''}
+            <div style="flex:1;">
+              <div class="row" style="gap:8px;flex-wrap:wrap;">
+                <span style="font-weight:800;font-size:14.5px;${isCovered?'text-decoration:line-through;color:var(--muted);':''}">${esc(fp.name)}</span>
+                <button class="pill ${scope==='En pareja'?'pill-peach':''}" style="border:none;cursor:pointer;" onclick="toggleFixedScope('${fp.id}')" title="Clic para cambiar entre Personal y En pareja">
+                  ${scope === 'En pareja' ? '❤️ En pareja' : '👤 Personal'}
+                </button>
+                <span class="pill pill-mint">Apartar ${fmtMoney(monthlyEq)}/mes</span>
+                ${(fp.tags || []).map(t => `<span class="pill" style="background:rgba(255,255,255,0.06);color:var(--muted);">🏷 ${esc(t)}</span>`).join('')}
+              </div>
+              <div class="sub" style="margin-top:3px;">Próximo cobro: <b>${fmtDateShort(fp.nextDue)}</b> · ${fp.frequency}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:850;">${fmtMoney(fp.amount)}</div>
+              <div class="sub">${(FREQ_META[fp.frequency]||{}).label || ''}</div>
+            </div>
+            <button class="btn btn-mint btn-sm" onclick="registerFixedPayment('${fp.id}')">Registrar pago</button>
+            <button class="icon-btn" style="width:30px;height:30px;" onclick="openFixedModal('${fp.id}')">✎</button>
+            <button class="icon-btn" style="width:30px;height:30px;" onclick="deleteFixedPayment('${fp.id}')">🗑</button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function setSimMode(m) {
+  data.simulatedIncomeMode = m;
+  saveData();
+  render();
+}
+function setSimScope(s) {
+  data.simulatedIncomeScope = s;
+  saveData();
+  render();
+}
+function onSimIncomeInput(raw) {
+  const num = parseFloat(raw);
+  data.simulatedIncome = (!isNaN(num) && num > 0) ? num : 0;
+  saveData();
+  // Update live DOM numbers without losing input focus!
+  const mode = data.simulatedIncomeMode || 'remaining';
+  const scopeKey = data.simulatedIncomeScope || 'all';
+  const simScope = scopeKey === 'personal' ? 'Personal' : scopeKey === 'couple' ? 'En pareja' : null;
+  const scoped = getFixedTotals(simScope);
+  const deduction = mode === 'total' ? scoped.monthly : mode === 'biweekly' ? scoped.biweekly : mode === 'weekly' ? scoped.weekly : scoped.remaining;
+  const simIncome = Number(data.simulatedIncome) || 0;
+  const freeAmount = simIncome - deduction;
+  const freePct = simIncome > 0 ? Math.round((freeAmount / simIncome) * 100) : 0;
+  const valEl = document.getElementById('sim-free-val');
+  const lblEl = document.getElementById('sim-free-label');
+  const pctEl = document.getElementById('sim-free-pct');
+  if (valEl) {
+    valEl.textContent = fmtMoney(freeAmount);
+    valEl.style.color = freeAmount >= 0 ? 'var(--mint)' : 'var(--peach)';
+  }
+  if (lblEl) lblEl.textContent = freeAmount >= 0 ? 'TE QUEDA LIBRE' : 'TE FALTA CUBRIR';
+  if (pctEl) pctEl.textContent = simIncome > 0 ? `${freePct}% libre` : '';
+}
+
+function selectVisibleFixed(ids) {
+  const allSelected = ids.every(id => state.selectedFixedIDs[id]);
+  ids.forEach(id => {
+    if (allSelected) delete state.selectedFixedIDs[id];
+    else state.selectedFixedIDs[id] = true;
+  });
+  render();
+}
+function selectPendingFixed() {
+  state.selectedFixedIDs = {};
+  data.fixedPayments.forEach(fp => {
+    if (fp.isActive && getRemainingMonthlyFixed(fp) > 0) state.selectedFixedIDs[fp.id] = true;
+  });
+  render();
+}
+
+// ============================================================================
+// MOVIMIENTOS VIEW (WITH RUNNING BALANCE COLUMN)
+// ============================================================================
+function renderMovementsCatalog() {
+  const runningMap = getRunningMainBalances();
+  const mainName = getMainAccountName();
+
+  let list = [...data.entries].sort((a, b) => toDate(b.date) - toDate(a.date));
+  if (state.movKind !== 'Todos') list = list.filter(e => e.kind === state.movKind);
+  if (state.movCategoryID !== 'ALL') list = list.filter(e => e.categoryID === state.movCategoryID);
+  if (state.movSearch.trim()) {
+    const q = state.movSearch.trim().toLowerCase();
+    list = list.filter(e => (e.title || '').toLowerCase().includes(q) || (e.notes || '').toLowerCase().includes(q));
+  }
+  if (state.movPeriod !== 'Todo') {
+    const now = new Date();
+    list = list.filter(e => {
+      const d = toDate(e.date);
+      if (state.movPeriod === 'Hoy') return toInputDate(d) === toInputDate(now);
+      if (state.movPeriod === 'Este mes') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (state.movPeriod === 'Mes pasado') {
+        const pm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return d.getMonth() === pm.getMonth() && d.getFullYear() === pm.getFullYear();
+      }
+      if (state.movPeriod === 'Personalizado') {
+        const dStr = toInputDate(d);
+        return dStr >= state.movStart && dStr <= state.movEnd;
+      }
+      return true;
+    });
+  }
+
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div>
+          <div class="h2">Historial de movimientos</div>
+          <div class="sub">Incluye la columna Saldo ${esc(mainName)} para ver cuánto sumó o quedó después de cada movimiento.</div>
+        </div>
+        <input type="text" class="input" style="width:240px;" placeholder="🔍 Buscar concepto o nota..." value="${esc(state.movSearch)}" oninput="state.movSearch=this.value;render();">
+      </div>
+
+      <div class="row" style="gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        ${['Todo', 'Hoy', 'Este mes', 'Mes pasado', 'Personalizado'].map(p => `
+          <button class="filter-pill ${state.movPeriod===p?'active':''}" onclick="state.movPeriod='${p}';render();">${p}</button>
+        `).join('')}
+        <span style="margin:0 6px;color:var(--line);">|</span>
+        ${['Todos', 'Gasto', 'Ingreso'].map(k => `
+          <button class="filter-pill ${state.movKind===k?'active':''}" onclick="state.movKind='${k}';render();">${k === 'Todos' ? 'Todos' : k + 's'}</button>
+        `).join('')}
+      </div>
+
+      ${state.movPeriod === 'Personalizado' ? `
+        <div class="row" style="gap:8px;margin-bottom:12px;">
+          <span class="sub">Desde</span>
+          <input type="date" class="input" style="width:150px;" value="${state.movStart}" onchange="state.movStart=this.value;render();">
+          <span class="sub">Hasta</span>
+          <input type="date" class="input" style="width:150px;" value="${state.movEnd}" onchange="state.movEnd=this.value;render();">
+        </div>
+      ` : ''}
+
+      <div class="row" style="gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;">
+        <button class="filter-pill ${state.movCategoryID==='ALL'?'active':''}" onclick="state.movCategoryID='ALL';render();">Todas las categorías</button>
+        ${data.categories.filter(c => !c.archived).map(c => `
+          <button class="filter-pill ${state.movCategoryID===c.id?'active':''}" onclick="state.movCategoryID='${c.id}';render();">${c.emoji || '•'} ${esc(c.name)}</button>
+        `).join('')}
+      </div>
+
+      <!-- Header Columns -->
+      <div class="row" style="padding:8px 14px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--line);margin-bottom:8px;">
+        <div style="flex:2;">MOVIMIENTO</div>
+        <div style="flex:1.3;">CATEGORÍA / ORIGEN</div>
+        <div style="width:110px;">FECHA</div>
+        <div style="width:130px;text-align:right;">IMPORTE</div>
+        <div style="width:175px;text-align:right;">SALDO ${esc(mainName.toUpperCase())}</div>
+        <div style="width:70px;text-align:right;">ACCIONES</div>
+      </div>
+
+      ${list.map(e => {
+        const cat = getCategory(e.categoryID);
+        const runBal = runningMap[e.id];
+        const isExp = e.kind === 'Gasto';
+        const accName = e.debtAction === 'charge'
+          ? 'Compra a crédito'
+          : e.accountID
+            ? ((data.accounts.find(a => a.id === e.accountID) || {}).name || 'Caja')
+            : mainName;
+        return `
+          <div class="item-row">
+            <div style="flex:2;" class="row">
+              <div class="badge-ico" style="background:${cat.tint || '#BDA6FF'}22;color:${cat.tint || '#BDA6FF'};">${cat.emoji || (isExp ? '↗' : '↙')}</div>
+              <div>
+                <div style="font-weight:750;">${esc(e.title)}</div>
+                ${e.notes ? `<div class="sub">${esc(e.notes)}</div>` : ''}
+              </div>
+            </div>
+            <div style="flex:1.3;">
+              <div style="font-size:12.5px;font-weight:700;">${esc(cat.name)}</div>
+              <div class="sub">${esc(accName)}</div>
+            </div>
+            <div style="width:110px;font-size:12px;color:var(--muted);">${fmtDateShort(e.date)}</div>
+            <div style="width:130px;text-align:right;font-size:15px;font-weight:850;color:${isExp?'var(--peach)':'var(--mint)'};">
+              ${isExp ? '−' : '+'}${fmtMoney(e.amount)}
+            </div>
+            <div style="width:175px;text-align:right;">
+              ${runBal !== undefined ? `
+                <div style="font-size:14px;font-weight:800;color:var(--lavender);">${fmtMoney(runBal)}</div>
+                <div style="font-size:10px;color:${isExp?'var(--peach)':'var(--mint)'};">${isExp ? 'Quedó tras −' : 'Sumó +'}${fmtMoney(e.amount)}</div>
+              ` : `<span class="sub">${esc(accName)}</span>`}
+            </div>
+            <div style="width:70px;display:flex;justify-content:flex-end;gap:4px;">
+              <button class="icon-btn" style="width:28px;height:28px;font-size:12px;" onclick="openEntryModal('${e.id}')">✎</button>
+              <button class="icon-btn" style="width:28px;height:28px;font-size:12px;" onclick="deleteEntry('${e.id}')">🗑</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ============================================================================
+// CAJAS Y DEUDAS VIEW (WITH CREDIT CARD AVAILABLE AMOUNT)
+// ============================================================================
+function renderBoxesAndDebts() {
+  const mainName = getMainAccountName();
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div>
+          <div class="h2">Cuentas y cajas de ahorro</div>
+          <div class="sub">Tu cuenta principal (${esc(mainName)}) y Efectivo conforman tu dinero disponible.</div>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" onclick="openAvailableModal()">✎ Configurar Disponible</button>
+          <button class="btn btn-mint btn-sm" onclick="openAccountModal()">+ Nueva caja</button>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="surface-raised" style="border-color:rgba(189,166,255,0.35);cursor:pointer;" onclick="openAvailableModal()">
+          <div class="label-caps">CUENTA PRINCIPAL</div>
+          <div class="h2" style="margin:6px 0;">${esc(mainName)}</div>
+          <div style="font-size:26px;font-weight:850;color:var(--lavender);">${fmtMoney(getMainAccountBalance())}</div>
+          <div class="sub" style="margin-top:6px;">Clic para renombrar o ajustar saldo</div>
+        </div>
+        ${data.accounts.map(acc => {
+          const isEf = isEfectivoAccount(acc);
+          const bal = getBalance(acc.id);
+          return `
+            <div class="surface-raised" style="border-color:${isEf?'rgba(142,214,180,0.35)':'rgba(127,203,215,0.3)'};cursor:pointer;" onclick="openAccountModal('${acc.id}')">
+              <div class="label-caps">${isEf ? 'EFECTIVO (SUMA AL DISPONIBLE)' : 'CAJA DE AHORRO'}</div>
+              <div class="h2" style="margin:6px 0;">${esc(acc.name)}</div>
+              <div style="font-size:26px;font-weight:850;color:${isEf?'var(--mint)':'var(--sky)'};">${fmtMoney(bal)}</div>
+              <div class="sub" style="margin-top:6px;">Clic para ajustar saldo</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div>
+          <div class="h2">Tarjetas de crédito y deudas</div>
+          <div class="sub">Consulta tu monto disponible en cada tarjeta, saldo usado y fecha de pago.</div>
+        </div>
+        <button class="btn btn-peach btn-sm" onclick="openDebtModal()">+ Nueva tarjeta o deuda</button>
+      </div>
+      <div class="grid-2">
+        ${data.debts.map(d => {
+          const bal = getDebtBalance(d);
+          const limit = Number(d.creditLimit) || 0;
+          const avail = limit > 0 ? Math.max(limit - bal, 0) : 0;
+          const ratio = limit > 0 ? Math.min(Math.max(bal / limit, 0), 1) : 0;
+          return `
+            <div class="surface-raised" style="border-color:rgba(255,184,140,0.3);">
+              <div class="row-between" style="margin-bottom:10px;">
+                <div>
+                  <div class="h2">${esc(d.name)}</div>
+                  <div class="sub">${esc(d.kind)} ${d.paymentDate ? '· Pago: ' + fmtDateShort(d.paymentDate) : ''}</div>
+                </div>
+                <div class="row" style="gap:6px;">
+                  <button class="btn btn-mint btn-sm" onclick="openDebtMovement('${d.id}', 'payment')">Abonar</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openDebtMovement('${d.id}', 'charge')">+ Cargo</button>
+                  <button class="icon-btn" style="width:28px;height:28px;" onclick="openDebtModal('${d.id}')">✎</button>
+                </div>
+              </div>
+              ${d.kind === 'Tarjeta de crédito' && limit > 0 ? `
+                <div class="row-between" style="margin-bottom:10px;">
+                  <div>
+                    <div class="label-caps">MONTO DISPONIBLE</div>
+                    <div style="font-size:25px;font-weight:850;color:var(--mint);">${fmtMoney(avail)}</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div class="label-caps">USADO</div>
+                    <div style="font-size:18px;font-weight:800;color:var(--peach);">${fmtMoney(bal)}</div>
+                  </div>
+                </div>
+                <div class="progress-track" style="margin-bottom:6px;">
+                  <div class="progress-fill" style="width:${ratio*100}%;background:${ratio>=0.85?'var(--peach)':'var(--mint)'};"></div>
+                </div>
+                <div class="row-between sub">
+                  <span>Límite: ${fmtMoney(limit)}</span>
+                  <span>${Math.round(ratio * 100)}% ocupado</span>
+                </div>
+              ` : `
+                <div class="label-caps">DEUDA PENDIENTE</div>
+                <div style="font-size:25px;font-weight:850;color:var(--peach);margin-top:4px;">${fmtMoney(bal)}</div>
+              `}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderCategoriesCatalog() {
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div>
+          <div class="h2">Categorías de ingresos y gastos</div>
+          <div class="sub">Personaliza emojis y colores para tus gráficas.</div>
+        </div>
+        <button class="btn btn-lavender btn-sm" onclick="openCategoryModal()">+ Nueva categoría</button>
+      </div>
+      <div class="grid-3">
+        ${data.categories.filter(c => !c.archived).map(c => `
+          <div class="item-row" style="margin-bottom:0;cursor:pointer;" onclick="openCategoryModal('${c.id}')">
+            <div class="badge-ico" style="background:${c.tint||'#BDA6FF'}22;color:${c.tint||'#BDA6FF'};">${c.emoji || '✨'}</div>
+            <div style="flex:1;">
+              <div style="font-weight:750;">${esc(c.name)}</div>
+              <div class="sub">${esc(c.kind)}</div>
+            </div>
+            <span style="color:var(--lavender);">✎</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================================
+// INICIO, AGENDA, SEMANA, METAS, AJUSTES
+// ============================================================================
+function renderInicio() {
+  const pendingTasks = data.tasks.filter(t => !t.isDone);
+  const fixedTotals = getFixedTotals();
+  return `
+    <div class="grid-4">
+      <div class="surface-raised"><div class="label-caps">TAREAS PENDIENTES</div><div style="font-size:28px;font-weight:850;color:var(--lavender);margin-top:6px;">${pendingTasks.length}</div></div>
+      <div class="surface-raised"><div class="label-caps">EVENTOS REGISTRADOS</div><div style="font-size:28px;font-weight:850;color:var(--sky);margin-top:6px;">${data.events.length}</div></div>
+      <div class="surface-raised"><div class="label-caps">METAS ACTIVAS</div><div style="font-size:28px;font-weight:850;color:var(--mint);margin-top:6px;">${data.goals.length}</div></div>
+      <div class="surface-raised" style="cursor:pointer;" onclick="setPage('Finanzas')"><div class="label-caps">DISPONIBLE ACTUAL</div><div style="font-size:28px;font-weight:850;color:var(--mint);margin-top:6px;">${fmtMoney(getAvailableBalance())}</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:12px;">
+          <div class="h2">Mis tareas</div>
+          <button class="btn btn-lavender btn-sm" onclick="openTaskModal()">+ Nueva tarea</button>
+        </div>
+        ${data.tasks.length === 0 ? `<div class="sub">No tienes tareas registradas.</div>` : data.tasks.map(t => `
+          <div class="item-row">
+            <input type="checkbox" ${t.isDone?'checked':''} onchange="toggleTask('${t.id}')" style="width:18px;height:18px;accent-color:var(--mint);cursor:pointer;">
+            <div style="flex:1;">
+              <div style="font-weight:750;${t.isDone?'text-decoration:line-through;color:var(--muted);':''}">${esc(t.title)}</div>
+              <div class="sub">Vence: ${fmtDateShort(t.due)} ${(t.tags||[]).map(tg=>`· #${esc(tg)}`).join(' ')}</div>
+            </div>
+            <button class="icon-btn" style="width:28px;height:28px;" onclick="openTaskModal('${t.id}')">✎</button>
+            <button class="icon-btn" style="width:28px;height:28px;" onclick="deleteTask('${t.id}')">🗑</button>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="surface">
+        <div class="row-between" style="margin-bottom:12px;">
+          <div class="h2">Próximos pagos fijos</div>
+          <span class="pill pill-mint">Apartar ${fmtMoney(fixedTotals.monthly)}/mes (${fmtMoney(fixedTotals.biweekly)}/qna)</span>
+        </div>
+        ${data.fixedPayments.slice(0, 6).map(fp => `
+          <div class="item-row">
+            <div style="flex:1;">
+              <div style="font-weight:750;">${esc(fp.name)}</div>
+              <div class="sub">${fmtDateShort(fp.nextDue)} · ${fp.frequency} · ${getEffectiveScope(fp)}</div>
+            </div>
+            <b>${fmtMoney(fp.amount)}</b>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAgenda() {
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div><div class="h2">Agenda de eventos y entregas</div><div class="sub">Tus eventos y tareas programadas.</div></div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" onclick="openTaskModal()">+ Tarea</button>
+          <button class="btn btn-lavender btn-sm" onclick="openEventModal()">+ Evento</button>
+        </div>
+      </div>
+      ${data.events.map(ev => `
+        <div class="item-row">
+          <div class="badge-ico" style="background:rgba(127,203,215,0.16);color:var(--sky);">📅</div>
+          <div style="flex:1;">
+            <div style="font-weight:750;">${esc(ev.title)}</div>
+            <div class="sub">${fmtDateShort(ev.start)} · ${esc(ev.kind || 'Personal')} ${ev.notes ? '· ' + esc(ev.notes) : ''}</div>
+          </div>
+          <button class="icon-btn" style="width:28px;height:28px;" onclick="deleteEvent('${ev.id}')">🗑</button>
+        </div>
+      `).join('')}
+      ${data.tasks.map(t => `
+        <div class="item-row">
+          <input type="checkbox" ${t.isDone?'checked':''} onchange="toggleTask('${t.id}')" style="width:18px;height:18px;accent-color:var(--mint);">
+          <div style="flex:1;">
+            <div style="font-weight:750;">${esc(t.title)}</div>
+            <div class="sub">Entrega: ${fmtDateShort(t.due)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderSemana() {
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return `
+    <div class="grid-4">
+      ${days.map((dName, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const key = toInputDate(d);
+        const dayTasks = data.tasks.filter(t => toInputDate(t.due) === key);
+        const dayEvents = data.events.filter(e => toInputDate(e.start) === key);
+        return `
+          <div class="surface" style="margin-bottom:0;">
+            <div class="label-caps">${dName}</div>
+            <div class="h2" style="margin-bottom:10px;">${d.getDate()} ${d.toLocaleDateString('es-MX',{month:'short'})}</div>
+            ${dayEvents.map(e => `<div class="pill pill-sky" style="margin-bottom:5px;display:block;">📅 ${esc(e.title)}</div>`).join('')}
+            ${dayTasks.map(t => `<div class="pill" style="margin-bottom:5px;display:block;">☑ ${esc(t.title)}</div>`).join('')}
+            ${dayEvents.length===0 && dayTasks.length===0 ? `<div class="sub">Libre</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderMetas() {
+  return `
+    <div class="surface">
+      <div class="row-between" style="margin-bottom:14px;">
+        <div><div class="h2">Metas y proyectos</div><div class="sub">Seguimiento de objetivos e hitos.</div></div>
+        <button class="btn btn-lavender btn-sm" onclick="openGoalModal()">+ Nueva meta</button>
+      </div>
+      ${data.goals.map(g => {
+        const ms = g.milestones || [];
+        const done = ms.filter(m => m.isDone).length;
+        const pct = ms.length > 0 ? Math.round((done / ms.length) * 100) : (Number(g.progress) || 0);
+        return `
+          <div class="item-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+            <div class="row-between">
+              <div>
+                <div class="h2">${esc(g.title)}</div>
+                <div class="sub">Fecha objetivo: ${fmtDateShort(g.targetDate)} · ${pct}% completado</div>
+              </div>
+              <button class="icon-btn" style="width:28px;height:28px;" onclick="deleteGoal('${g.id}')">🗑</button>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:var(--mint);"></div></div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderAjustes() {
+  return `
+    <div class="surface">
+      <div class="h2" style="margin-bottom:14px;">Ajustes generales y respaldo de base de datos</div>
+      <div class="grid-2">
+        <div class="field-group">
+          <label>Nombre del espacio</label>
+          <input class="input" value="${esc(data.name || '')}" onchange="data.name=this.value;saveData();render();">
+        </div>
+        <div class="field-group">
+          <label>Moneda (MXN, USD, EUR)</label>
+          <input class="input" value="${esc(data.currencyCode || 'MXN')}" onchange="data.currencyCode=this.value.toUpperCase();saveData();render();">
+        </div>
+      </div>
+      <div class="row" style="gap:12px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-lavender" onclick="exportJSON()">⬇ Exportar respaldo (planner.json)</button>
+        <label class="btn btn-mint" style="cursor:pointer;">
+          ⬆ Importar respaldo (planner.json)
+          <input type="file" accept=".json" style="display:none;" onchange="importJSON(event)">
+        </label>
+        <button class="btn btn-ghost" onclick="data.appearance = data.appearance==='light'?'dark':'light';normalizeData();saveData();render();">
+          Cambiar tema (${data.appearance === 'light' ? 'Claro' : 'Oscuro'})
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================================
+// MODALS & CRUD ACTIONS
+// ============================================================================
+function openModal(title, bodyHTML, footerHTML) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-footer').innerHTML = footerHTML;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+function openAvailableModal() {
+  const mainName = getMainAccountName();
+  const mainBal = getMainAccountBalance();
+  const cashBal = getEfectivoBalance();
+  openModal('Configurar dinero disponible', `
+    <div class="sub">Tu dinero disponible es la suma de tu cuenta principal más tu caja de Efectivo.</div>
+    <div class="field-group">
+      <label>Nombre de tu cuenta principal</label>
+      <input id="av-name" class="input" value="${esc(mainName)}">
+    </div>
+    <div class="field-group">
+      <label>Saldo actual en cuenta principal (${data.currencyCode})</label>
+      <input id="av-main" type="number" step="0.01" class="input" value="${mainBal.toFixed(2)}">
+    </div>
+    <div class="field-group">
+      <label>Saldo actual en Efectivo (${data.currencyCode})</label>
+      <input id="av-cash" type="number" step="0.01" class="input" value="${cashBal.toFixed(2)}">
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveAvailableModal()">Guardar</button>
+  `);
+}
+
+function saveAvailableModal() {
+  const name = document.getElementById('av-name').value.trim() || 'T. Débito Santander';
+  const desiredMain = parseFloat(document.getElementById('av-main').value) || 0;
+  const desiredCash = parseFloat(document.getElementById('av-cash').value) || 0;
+  data.mainAccountName = name;
+  data.availableOpeningBalance = (Number(data.availableOpeningBalance) || 0) + (desiredMain - getMainAccountBalance());
+  const ef = getEfectivoAccount();
+  if (ef) ef.openingBalance = (Number(ef.openingBalance) || 0) + (desiredCash - getBalance(ef.id));
+  saveData();
+  closeModal();
+  render();
+}
+
+function openEntryModal(entryID = null, preset = null) {
+  const existing = entryID ? data.entries.find(e => e.id === entryID) : null;
+  const e = existing || preset || {
+    id: uuid(),
+    title: '',
+    amount: '',
+    kind: 'Gasto',
+    date: toAppleTimestamp(new Date()),
+    categoryID: (data.categories.find(c => !c.archived) || {}).id || '',
+    accountID: null,
+    debtID: null,
+    debtAction: null,
+    fixedPaymentID: null,
+    notes: ''
+  };
+
+  openModal(existing ? 'Editar movimiento' : 'Nuevo movimiento', `
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Tipo</label>
+        <select id="en-kind" class="input">
+          <option value="Gasto" ${e.kind==='Gasto'?'selected':''}>Gasto</option>
+          <option value="Ingreso" ${e.kind==='Ingreso'?'selected':''}>Ingreso</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Importe (${data.currencyCode})</label>
+        <input id="en-amount" type="number" step="0.01" class="input" value="${e.amount}" placeholder="0.00">
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Concepto</label>
+      <input id="en-title" class="input" value="${esc(e.title || '')}" placeholder="¿En qué gastaste o de dónde llegó?">
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Fecha</label>
+        <input id="en-date" type="date" class="input" value="${toInputDate(e.date)}">
+      </div>
+      <div class="field-group">
+        <label>Origen / Cuenta</label>
+        <select id="en-acc" class="input">
+          <option value="" ${!e.accountID?'selected':''}>${esc(getMainAccountName())} (Principal)</option>
+          ${data.accounts.map(a => `<option value="${a.id}" ${e.accountID===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="row-between">
+        <label>Categoría</label>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inline-cat-box').style.display='block'">+ Nueva categoría</button>
+      </div>
+      <select id="en-cat" class="input">
+        ${data.categories.filter(c => !c.archived).map(c => `<option value="${c.id}" ${e.categoryID===c.id?'selected':''}>${c.emoji||'•'} ${esc(c.name)} (${c.kind})</option>`).join('')}
+      </select>
+    </div>
+    <div id="inline-cat-box" style="display:none;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--lavender);">
+      <div class="label-caps" style="margin-bottom:6px;">CREAR CATEGORÍA RÁPIDA</div>
+      <div class="row" style="gap:8px;">
+        <input id="ic-emoji" class="input" style="width:60px;" value="✨" placeholder="Emoji">
+        <input id="ic-name" class="input" placeholder="Nombre de categoría">
+        <button type="button" class="btn btn-lavender btn-sm" onclick="createInlineCategory()">Crear</button>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Modalidad de deuda (opcional)</label>
+        <select id="en-debt-act" class="input">
+          <option value="" ${!e.debtAction?'selected':''}>Contado normal</option>
+          <option value="charge" ${e.debtAction==='charge'?'selected':''}>Compra con tarjeta / cargo a deuda</option>
+          <option value="payment" ${e.debtAction==='payment'?'selected':''}>Abono a tarjeta / deuda</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Tarjeta o deuda</label>
+        <select id="en-debt-id" class="input">
+          <option value="">Ninguna</option>
+          ${data.debts.map(d => `<option value="${d.id}" ${e.debtID===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Notas</label>
+      <input id="en-notes" class="input" value="${esc(e.notes || '')}">
+    </div>
+    <input type="hidden" id="en-fixed-id" value="${e.fixedPaymentID || ''}">
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveEntryModal('${existing ? existing.id : ''}')">Guardar movimiento</button>
+  `);
+}
+
+function createInlineCategory() {
+  const name = document.getElementById('ic-name').value.trim();
+  const emoji = document.getElementById('ic-emoji').value.trim() || '✨';
+  const kind = document.getElementById('en-kind').value || 'Gasto';
+  if (!name) return;
+  const newCat = { id: uuid(), name, emoji, symbol: 'circle.fill', tint: '#BDA6FF', kind };
+  data.categories.push(newCat);
+  saveData();
+  const sel = document.getElementById('en-cat');
+  const opt = document.createElement('option');
+  opt.value = newCat.id;
+  opt.textContent = `${emoji} ${name} (${kind})`;
+  opt.selected = true;
+  sel.appendChild(opt);
+  document.getElementById('inline-cat-box').style.display = 'none';
+}
+
+function saveEntryModal(existingID) {
+  const title = document.getElementById('en-title').value.trim();
+  const amount = parseFloat(document.getElementById('en-amount').value);
+  if (!title || isNaN(amount) || amount <= 0) return;
+  const entry = {
+    id: existingID || uuid(),
+    title,
+    amount,
+    kind: document.getElementById('en-kind').value,
+    date: fromInputDate(document.getElementById('en-date').value),
+    categoryID: document.getElementById('en-cat').value,
+    accountID: document.getElementById('en-acc').value || undefined,
+    debtAction: document.getElementById('en-debt-act').value || undefined,
+    debtID: document.getElementById('en-debt-id').value || undefined,
+    fixedPaymentID: document.getElementById('en-fixed-id').value || undefined,
+    notes: document.getElementById('en-notes').value.trim()
+  };
+  const isNew = !existingID;
+  if (existingID) {
+    const idx = data.entries.findIndex(e => e.id === existingID);
+    if (idx >= 0) data.entries[idx] = entry;
+  } else {
+    data.entries.push(entry);
+  }
+  // If linked to a fixed payment and new, auto-check & advance nextDue
+  if (isNew && entry.fixedPaymentID) {
+    const fp = data.fixedPayments.find(p => p.id === entry.fixedPaymentID);
+    if (fp) {
+      const done = getCompletedChecks(fp);
+      const target = getTargetChecks(fp);
+      if (done < target) setMonthlyCheckCount(fp.id, done + 1, true);
+      else if (fp.frequency !== 'Único') {
+        fp.cycleStart = fp.nextDue;
+        fp.nextDue = stepDueDate(fp.nextDue, fp.frequency, 1);
+      }
+    }
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function deleteEntry(id) {
+  data.entries = data.entries.filter(e => e.id !== id);
+  saveData();
+  render();
+}
+
+function registerFixedPayment(fpID) {
+  const fp = data.fixedPayments.find(p => p.id === fpID);
+  if (!fp) return;
+  openEntryModal(null, {
+    id: uuid(),
+    title: fp.name,
+    amount: fp.amount,
+    kind: 'Gasto',
+    date: toAppleTimestamp(new Date()),
+    categoryID: fp.categoryID || (data.categories[0] || {}).id,
+    accountID: fp.accountID || null,
+    fixedPaymentID: fp.id,
+    notes: fp.notes || ''
+  });
+}
+
+function openFixedModal(fpID = null) {
+  const existing = fpID ? data.fixedPayments.find(p => p.id === fpID) : null;
+  const fp = existing || {
+    id: uuid(),
+    name: '',
+    amount: '',
+    frequency: 'Mensual',
+    nextDue: toAppleTimestamp(new Date()),
+    cycleStart: toAppleTimestamp(new Date()),
+    categoryID: (data.categories.find(c => c.kind === 'Gasto') || {}).id || '',
+    scope: state.fpScopeFilter === 'En pareja' ? 'En pareja' : 'Personal',
+    tags: [],
+    isActive: true,
+    notes: ''
+  };
+  openModal(existing ? 'Editar pago fijo' : 'Nuevo pago fijo', `
+    <div class="field-group">
+      <label>Nombre del servicio o compromiso</label>
+      <input id="fp-name" class="input" value="${esc(fp.name)}" placeholder="Ej. Renta, Gimnasio, iCloud+">
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Importe por cobro (${data.currencyCode})</label>
+        <input id="fp-amt" type="number" step="0.01" class="input" value="${fp.amount}">
+      </div>
+      <div class="field-group">
+        <label>Frecuencia</label>
+        <select id="fp-freq" class="input">
+          ${Object.keys(FREQ_META).map(f => `<option value="${f}" ${fp.frequency===f?'selected':''}>${f}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Próxima fecha de cobro</label>
+        <input id="fp-due" type="date" class="input" value="${toInputDate(fp.nextDue)}">
+      </div>
+      <div class="field-group">
+        <label>Tipo de gasto (Personal / En pareja)</label>
+        <select id="fp-scope" class="input">
+          <option value="Personal" ${getEffectiveScope(fp)==='Personal'?'selected':''}>👤 Personal</option>
+          <option value="En pareja" ${getEffectiveScope(fp)==='En pareja'?'selected':''}>❤️ En pareja</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Categoría</label>
+      <select id="fp-cat" class="input">
+        ${data.categories.filter(c => !c.archived).map(c => `<option value="${c.id}" ${fp.categoryID===c.id?'selected':''}>${c.emoji||'•'} ${esc(c.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Etiquetas adicionales (separadas por coma)</label>
+      <input id="fp-tags" class="input" value="${esc((fp.tags || []).join(', '))}" placeholder="Ej. Hogar, Suscripciones, Auto">
+    </div>
+    <div class="field-group">
+      <label>Notas</label>
+      <input id="fp-notes" class="input" value="${esc(fp.notes || '')}">
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveFixedModal('${existing ? existing.id : ''}')">Guardar pago fijo</button>
+  `);
+}
+
+function saveFixedModal(existingID) {
+  const name = document.getElementById('fp-name').value.trim();
+  const amount = parseFloat(document.getElementById('fp-amt').value);
+  if (!name || isNaN(amount) || amount <= 0) return;
+  const tags = document.getElementById('fp-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+  const existing = existingID ? data.fixedPayments.find(p => p.id === existingID) : null;
+  const obj = {
+    ...(existing || {}),
+    id: existingID || uuid(),
+    name,
+    amount,
+    frequency: document.getElementById('fp-freq').value,
+    nextDue: fromInputDate(document.getElementById('fp-due').value),
+    cycleStart: existing?.cycleStart || toAppleTimestamp(new Date()),
+    categoryID: document.getElementById('fp-cat').value,
+    scope: document.getElementById('fp-scope').value,
+    tags: tags.length ? tags : undefined,
+    isActive: true,
+    notes: document.getElementById('fp-notes').value.trim()
+  };
+  if (existingID) {
+    const idx = data.fixedPayments.findIndex(p => p.id === existingID);
+    if (idx >= 0) data.fixedPayments[idx] = obj;
+  } else {
+    data.fixedPayments.push(obj);
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function deleteFixedPayment(id) {
+  data.fixedPayments = data.fixedPayments.filter(p => p.id !== id);
+  delete state.selectedFixedIDs[id];
+  saveData();
+  render();
+}
+
+function openAccountModal(accID = null) {
+  const existing = accID ? data.accounts.find(a => a.id === accID) : null;
+  const curBal = existing ? getBalance(existing.id) : 0;
+  openModal(existing ? 'Editar caja' : 'Nueva caja de ahorro', `
+    <div class="field-group">
+      <label>Nombre de la caja</label>
+      <input id="ac-name" class="input" value="${esc(existing?.name || '')}" ${existing && isEfectivoAccount(existing) ? 'readonly' : ''}>
+    </div>
+    <div class="field-group">
+      <label>Saldo actual (${data.currencyCode})</label>
+      <input id="ac-bal" type="number" step="0.01" class="input" value="${curBal.toFixed(2)}">
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-mint" onclick="saveAccountModal('${existing ? existing.id : ''}')">Guardar</button>
+  `);
+}
+
+function saveAccountModal(existingID) {
+  const name = document.getElementById('ac-name').value.trim();
+  const desired = parseFloat(document.getElementById('ac-bal').value) || 0;
+  if (!name) return;
+  if (existingID) {
+    const acc = data.accounts.find(a => a.id === existingID);
+    if (acc) {
+      acc.name = name;
+      acc.openingBalance = (Number(acc.openingBalance) || 0) + (desired - getBalance(acc.id));
+    }
+  } else {
+    data.accounts.push({ id: uuid(), name, openingBalance: desired, symbol: 'building.columns.fill' });
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function openDebtModal(debtID = null) {
+  const existing = debtID ? data.debts.find(d => d.id === debtID) : null;
+  const d = existing || { id: uuid(), name: '', kind: 'Tarjeta de crédito', openingBalance: 0, creditLimit: 10000, notes: '' };
+  openModal(existing ? 'Editar tarjeta o deuda' : 'Nueva tarjeta o deuda', `
+    <div class="field-group">
+      <label>Nombre</label>
+      <input id="db-name" class="input" value="${esc(d.name)}" placeholder="Ej. TDC NUU, TDC Coppel">
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Tipo</label>
+        <select id="db-kind" class="input">
+          <option value="Tarjeta de crédito" ${d.kind==='Tarjeta de crédito'?'selected':''}>Tarjeta de crédito</option>
+          <option value="Préstamo" ${d.kind==='Préstamo'?'selected':''}>Préstamo</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Deuda inicial (${data.currencyCode})</label>
+        <input id="db-open" type="number" step="0.01" class="input" value="${d.openingBalance || 0}">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Límite de crédito (si es tarjeta)</label>
+        <input id="db-limit" type="number" step="0.01" class="input" value="${d.creditLimit || ''}">
+      </div>
+      <div class="field-group">
+        <label>Próxima fecha de pago</label>
+        <input id="db-date" type="date" class="input" value="${d.paymentDate ? toInputDate(d.paymentDate) : ''}">
+      </div>
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-peach" onclick="saveDebtModal('${existing ? existing.id : ''}')">Guardar</button>
+  `);
+}
+
+function saveDebtModal(existingID) {
+  const name = document.getElementById('db-name').value.trim();
+  if (!name) return;
+  const limitVal = parseFloat(document.getElementById('db-limit').value);
+  const dateStr = document.getElementById('db-date').value;
+  const obj = {
+    id: existingID || uuid(),
+    name,
+    kind: document.getElementById('db-kind').value,
+    openingBalance: parseFloat(document.getElementById('db-open').value) || 0,
+    creditLimit: !isNaN(limitVal) && limitVal > 0 ? limitVal : undefined,
+    paymentDate: dateStr ? fromInputDate(dateStr) : undefined,
+    notes: ''
+  };
+  if (existingID) {
+    const idx = data.debts.findIndex(d => d.id === existingID);
+    if (idx >= 0) data.debts[idx] = obj;
+  } else data.debts.push(obj);
+  saveData();
+  closeModal();
+  render();
+}
+
+function openDebtMovement(debtID, action) {
+  const debt = data.debts.find(d => d.id === debtID);
+  if (!debt) return;
+  openEntryModal(null, {
+    id: uuid(),
+    title: action === 'payment' ? `Abono a ${debt.name}` : `Cargo a ${debt.name}`,
+    amount: '',
+    kind: 'Gasto',
+    date: toAppleTimestamp(new Date()),
+    categoryID: (data.categories.find(c => c.isDebtPayment) || data.categories[0] || {}).id,
+    debtID: debt.id,
+    debtAction: action,
+    notes: ''
+  });
+}
+
+function openTransferModal() {
+  openModal('Transferir entre cuentas y cajas', `
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Origen</label>
+        <select id="tr-from" class="input">
+          <option value="">${esc(getMainAccountName())} (${fmtMoney(getMainAccountBalance())})</option>
+          ${data.accounts.map(a => `<option value="${a.id}">${esc(a.name)} (${fmtMoney(getBalance(a.id))})</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Destino</label>
+        <select id="tr-to" class="input">
+          ${data.accounts.map(a => `<option value="${a.id}">${esc(a.name)} (${fmtMoney(getBalance(a.id))})</option>`).join('')}
+          <option value="">${esc(getMainAccountName())} (${fmtMoney(getMainAccountBalance())})</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Importe (${data.currencyCode})</label>
+      <input id="tr-amt" type="number" step="0.01" class="input" placeholder="0.00">
+    </div>
+    <div class="field-group">
+      <label>Nota</label>
+      <input id="tr-notes" class="input" placeholder="Ej. Ahorro de la semana">
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveTransferModal()">Transferir</button>
+  `);
+}
+
+function saveTransferModal() {
+  const from = document.getElementById('tr-from').value || undefined;
+  const to = document.getElementById('tr-to').value || undefined;
+  const amount = parseFloat(document.getElementById('tr-amt').value);
+  if (from === to || isNaN(amount) || amount <= 0) return;
+  data.transfers.push({ id: uuid(), fromAccountID: from, toAccountID: to, amount, date: toAppleTimestamp(new Date()), notes: document.getElementById('tr-notes').value.trim() });
+  saveData();
+  closeModal();
+  render();
+}
+
+function getBudgetSpent(b) {
+  const now = new Date();
+  let start = new Date(now.getFullYear(), now.getMonth(), 1);
+  let end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  if (b.period === 'Personalizado' && b.start && b.end) {
+    start = toDate(b.start);
+    end = toDate(b.end);
+    end.setHours(23,59,59,999);
+  }
+  return data.entries.filter(e => {
+    const d = toDate(e.date);
+    return countsAsExpense(e) && d >= start && d <= end && (!b.categoryID || e.categoryID === b.categoryID);
+  }).reduce((s, e) => s + Number(e.amount), 0);
+}
+
+function openBudgetModal(bID = null, prefillLimit = null) {
+  const existing = bID ? data.budgets.find(b => b.id === bID) : null;
+  const b = existing || { id: uuid(), name: 'Presupuesto libre', limit: prefillLimit || 1000, period: 'Mensual', categoryID: null };
+  openModal(existing ? 'Editar presupuesto' : 'Nuevo presupuesto', `
+    <div class="field-group">
+      <label>Nombre</label>
+      <input id="bg-name" class="input" value="${esc(b.name)}">
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group">
+        <label>Límite (${data.currencyCode})</label>
+        <input id="bg-limit" type="number" step="0.01" class="input" value="${b.limit}">
+      </div>
+      <div class="field-group">
+        <label>Periodo</label>
+        <select id="bg-period" class="input">
+          <option value="Semanal" ${b.period==='Semanal'?'selected':''}>Semanal</option>
+          <option value="Mensual" ${b.period==='Mensual'?'selected':''}>Mensual</option>
+          <option value="Personalizado" ${b.period==='Personalizado'?'selected':''}>Personalizado</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Categoría (opcional)</label>
+      <select id="bg-cat" class="input">
+        <option value="">Todas las categorías</option>
+        ${data.categories.filter(c => !c.archived && c.kind==='Gasto').map(c => `<option value="${c.id}" ${b.categoryID===c.id?'selected':''}>${c.emoji||'•'} ${esc(c.name)}</option>`).join('')}
+      </select>
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveBudgetModal('${existing ? existing.id : ''}')">Guardar</button>
+  `);
+}
+
+function saveBudgetModal(existingID) {
+  const name = document.getElementById('bg-name').value.trim();
+  const limit = parseFloat(document.getElementById('bg-limit').value);
+  if (!name || isNaN(limit) || limit <= 0) return;
+  const obj = {
+    id: existingID || uuid(),
+    name,
+    limit,
+    period: document.getElementById('bg-period').value,
+    categoryID: document.getElementById('bg-cat').value || undefined,
+    start: toAppleTimestamp(new Date()),
+    end: toAppleTimestamp(new Date(Date.now() + 7 * 86400000))
+  };
+  if (existingID) {
+    const idx = data.budgets.findIndex(b => b.id === existingID);
+    if (idx >= 0) data.budgets[idx] = obj;
+  } else data.budgets.push(obj);
+  saveData();
+  closeModal();
+  render();
+}
+function deleteBudget(id) { data.budgets = data.budgets.filter(b => b.id !== id); saveData(); render(); }
+
+function openCategoryModal(catID = null) {
+  const existing = catID ? data.categories.find(c => c.id === catID) : null;
+  const c = existing || { id: uuid(), name: '', emoji: '✨', tint: '#BDA6FF', kind: 'Gasto', symbol: 'circle.fill' };
+  openModal(existing ? 'Editar categoría' : 'Nueva categoría', `
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="field-group"><label>Emoji</label><input id="ct-emoji" class="input" value="${esc(c.emoji || '✨')}"></div>
+      <div class="field-group"><label>Color Hex</label><input id="ct-tint" class="input" value="${esc(c.tint || '#BDA6FF')}"></div>
+    </div>
+    <div class="field-group"><label>Nombre</label><input id="ct-name" class="input" value="${esc(c.name)}"></div>
+    <div class="field-group">
+      <label>Tipo</label>
+      <select id="ct-kind" class="input">
+        <option value="Gasto" ${c.kind==='Gasto'?'selected':''}>Gasto</option>
+        <option value="Ingreso" ${c.kind==='Ingreso'?'selected':''}>Ingreso</option>
+      </select>
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveCategoryModal('${existing ? existing.id : ''}')">Guardar</button>
+  `);
+}
+function saveCategoryModal(existingID) {
+  const name = document.getElementById('ct-name').value.trim();
+  if (!name) return;
+  const obj = {
+    id: existingID || uuid(),
+    name,
+    emoji: document.getElementById('ct-emoji').value.trim() || '✨',
+    tint: document.getElementById('ct-tint').value.trim() || '#BDA6FF',
+    kind: document.getElementById('ct-kind').value,
+    symbol: 'circle.fill'
+  };
+  if (existingID) {
+    const idx = data.categories.findIndex(c => c.id === existingID);
+    if (idx >= 0) data.categories[idx] = obj;
+  } else data.categories.push(obj);
+  saveData();
+  closeModal();
+  render();
+}
+
+function openTaskModal(tID = null) {
+  const existing = tID ? data.tasks.find(t => t.id === tID) : null;
+  const t = existing || { id: uuid(), title: '', due: toAppleTimestamp(new Date()), isDone: false, notes: '' };
+  openModal(existing ? 'Editar tarea' : 'Nueva tarea', `
+    <div class="field-group"><label>Título</label><input id="tk-title" class="input" value="${esc(t.title)}"></div>
+    <div class="field-group"><label>Fecha límite</label><input id="tk-due" type="date" class="input" value="${toInputDate(t.due)}"></div>
+    <div class="field-group"><label>Notas</label><textarea id="tk-notes" class="input" rows="3">${esc(t.notes || '')}</textarea></div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveTaskModal('${existing ? existing.id : ''}')">Guardar</button>
+  `);
+}
+function saveTaskModal(existingID) {
+  const title = document.getElementById('tk-title').value.trim();
+  if (!title) return;
+  const obj = { id: existingID || uuid(), title, due: fromInputDate(document.getElementById('tk-due').value), isDone: false, notes: document.getElementById('tk-notes').value.trim(), tags: [], reminderOffsets: [] };
+  if (existingID) {
+    const idx = data.tasks.findIndex(t => t.id === existingID);
+    if (idx >= 0) data.tasks[idx] = { ...data.tasks[idx], ...obj };
+  } else data.tasks.push(obj);
+  saveData(); closeModal(); render();
+}
+function toggleTask(id) { const t = data.tasks.find(x => x.id === id); if (t) { t.isDone = !t.isDone; saveData(); render(); } }
+function deleteTask(id) { data.tasks = data.tasks.filter(x => x.id !== id); saveData(); render(); }
+
+function openEventModal() {
+  openModal('Nuevo evento', `
+    <div class="field-group"><label>Título</label><input id="ev-title" class="input"></div>
+    <div class="field-group"><label>Fecha</label><input id="ev-date" type="date" class="input" value="${toInputDate(new Date())}"></div>
+    <div class="field-group"><label>Notas</label><input id="ev-notes" class="input"></div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveEventModal()">Guardar</button>
+  `);
+}
+function saveEventModal() {
+  const title = document.getElementById('ev-title').value.trim();
+  if (!title) return;
+  const ts = fromInputDate(document.getElementById('ev-date').value);
+  data.events.push({ id: uuid(), title, start: ts, end: ts + 3600, kind: 'Personal', notes: document.getElementById('ev-notes').value.trim(), tags: [], reminderOffsets: [] });
+  saveData(); closeModal(); render();
+}
+function deleteEvent(id) { data.events = data.events.filter(x => x.id !== id); saveData(); render(); }
+
+function openGoalModal() {
+  openModal('Nueva meta', `
+    <div class="field-group"><label>Meta</label><input id="gl-title" class="input"></div>
+    <div class="field-group"><label>Fecha objetivo</label><input id="gl-date" type="date" class="input" value="${toInputDate(new Date())}"></div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-lavender" onclick="saveGoalModal()">Guardar</button>
+  `);
+}
+function saveGoalModal() {
+  const title = document.getElementById('gl-title').value.trim();
+  if (!title) return;
+  data.goals.push({ id: uuid(), title, targetDate: fromInputDate(document.getElementById('gl-date').value), milestones: [], tags: [], notes: '' });
+  saveData(); closeModal(); render();
+}
+function deleteGoal(id) { data.goals = data.goals.filter(x => x.id !== id); saveData(); render(); }
+
+// Import / Export JSON
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'planner.json';
+  a.click();
+}
+function importJSON(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (parsed && Array.isArray(parsed.categories)) {
+        data = parsed;
+        normalizeData();
+        saveData();
+        render();
+        alert('Base de datos importada correctamente.');
+      }
+    } catch (e) { alert('Archivo JSON inválido.'); }
+  };
+  reader.readAsText(file);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadData();
+</script>
+</body>
+</html>

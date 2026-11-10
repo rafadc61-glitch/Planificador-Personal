@@ -1,0 +1,47 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile Planificador-Personal-Windows.exe
+        shell: powershell
+        run: |
+          $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          & $csc /nologo /optimize+ /target:winexe `
+            /out:Planificador-Personal-Windows.exe `
+            /r:System.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+            /resource:Windows\app.html,Planificador.app.html `
+            /resource:Windows\seed.json,Planificador.seed.json `
+            Windows\Program.cs
+          if (-not (Test-Path "Planificador-Personal-Windows.exe")) {
+            throw "Failed to compile Planificador-Personal-Windows.exe"
+          }
+          Get-Item Planificador-Personal-Windows.exe | Select-Object Name, Length
+
+      - name: Publish GitHub Release with .exe
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "v1.0.0"
+          $exists = gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag Planificador-Personal-Windows.exe dist/Planificador-Personal-macOS.zip --clobber
+          } else {
+            gh release create $tag Planificador-Personal-Windows.exe dist/Planificador-Personal-macOS.zip `
+              --title "Planificador Personal (Windows .exe + macOS .app)" `
+              --notes "Descarga directa de Planificador-Personal-Windows.exe para Windows 10/11 y versión para macOS." `
+              --latest
+          }
